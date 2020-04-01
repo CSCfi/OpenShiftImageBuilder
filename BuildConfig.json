@@ -1,0 +1,31 @@
+{
+	"apiVersion": "v1",
+	"kind": "BuildConfig",
+  	"metadata": {
+    	"name": "custom" //Replace this
+  	},
+  "spec":{
+    
+    "output": {
+      "to": {
+      	"kind": "ImageStreamTag",
+      	"name": "custom:latest" // Replace this
+      }
+    },
+	"source": {
+		"git": {
+			"uri": "" // Replace this
+		},
+	"type": "Git"
+    },
+	"strategy": {
+		"sourceStrategy": {
+			"from": {
+				"kind": "ImageStreamTag",
+				"name": "s2i-minimal-notebook-py35:latest"
+			},
+          "type": "Source"
+		}
+	}
+  }
+}

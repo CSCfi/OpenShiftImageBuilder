@@ -1,0 +1,11 @@
+{"kind":"BuildRequest",
+ "apiVersion":"build.openshift.io/v1",
+ "metadata":
+ 	{"name":"custom",
+     "creationTimestamp":null
+    },
+ "triggeredBy":
+ 	[{"message":"Manually triggered"}],
+ "dockerStrategyOptions":{},
+ "sourceStrategyOptions":{}
+}
