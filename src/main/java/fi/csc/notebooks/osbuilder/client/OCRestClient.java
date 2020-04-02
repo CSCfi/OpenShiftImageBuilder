@@ -10,6 +10,7 @@ import javax.xml.bind.ValidationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -25,13 +26,10 @@ public class OCRestClient {
 
 	
 	private RestTemplate rt;
-	private OSJsonParser parser;
 	
 	@Autowired
 	public OCRestClient(){
-		rt = new RestTemplate();
-		parser = new OSJsonParser();
-		
+		rt = new RestTemplate();	
 	}
 	
 	private MultiValueMap<String, String> getHeaders() {
@@ -62,7 +60,32 @@ public class OCRestClient {
 				);
 		
 		
+		
+		return resp;
+		
+	}
+	
+public ResponseEntity<String> getImageStream(String imageName) {
+		
+		
+		HttpEntity<String> entity = new HttpEntity<String>(this.getHeaders());
+		
+		String imageStreamURL = Constants.generateOSUrl("apis", "imagestreams", imageName);
+		
+		System.out.println(imageStreamURL);
+		
+		ResponseEntity<String> resp = rt.exchange(imageStreamURL, 
+				HttpMethod.GET, 
+				entity, 
+				String.class
+				);
+		
 		System.out.println(resp);
+		
+		if (resp.getStatusCode().is2xxSuccessful())
+			return new ResponseEntity<String>(
+					OSJsonParser.parseImageStream(resp.getBody()), 
+					HttpStatus.OK);
 		
 		return resp;
 		
@@ -84,9 +107,9 @@ public class OCRestClient {
 		String imagetag = params.get("name") + ":latest";
 		params.put("imagetag", imagetag);
 		
-		System.out.println(parser.getPOSTBody("BuildConfig", params));
+		System.out.println(OSJsonParser.getPOSTBody("BuildConfig", params));
 		RequestEntity<String> e = new RequestEntity<String>(
-				parser.getPOSTBody("BuildConfig", params).toString(),
+				OSJsonParser.getPOSTBody("BuildConfig", params).toString(),
 				this.getHeaders(), 
 				HttpMethod.POST, 
 				new URI(buildURL) 
@@ -133,14 +156,12 @@ public ResponseEntity<String> postImageStreamConfig(Map<String, String> params) 
 				
 		
 		System.out.println(imageStreamURL);
-		
-		OSJsonParser parser = new OSJsonParser();
-		
+			
 		if(!params.containsKey("name"))
 			throw new RuntimeException("The parameter name is missing");
 		
 		RequestEntity<String> e = new RequestEntity<String>(
-				parser.getPOSTBody("ImageStream", params).toString(),
+				OSJsonParser.getPOSTBody("ImageStream", params).toString(),
 				this.getHeaders(), 
 				HttpMethod.POST, 
 				new URI(imageStreamURL) 
@@ -154,10 +175,10 @@ public ResponseEntity<String> postImageStreamConfig(Map<String, String> params) 
 
 public ResponseEntity<String> postBuildRequest(String name) throws URISyntaxException, ValidationException{
 	
-	String buildRequestURL = Constants.generateOSUrl("apis", "buildconfigs") + "/" + name + "/instantiate";
+	String buildRequestURL = Constants.generateOSUrl("apis", "buildconfigs", name) + "/instantiate";
 	
 	RequestEntity<String> e = new RequestEntity<String>(
-			parser.getPOSTBody("BuildRequest", name).toString(),
+			OSJsonParser.getPOSTBody("BuildRequest", name).toString(),
 			this.getHeaders(), 
 			HttpMethod.POST, 
 			new URI(buildRequestURL) 

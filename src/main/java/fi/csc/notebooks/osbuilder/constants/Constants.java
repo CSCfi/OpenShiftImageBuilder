@@ -61,11 +61,20 @@ public final class Constants {
 		
 	}
 	
-public String generateOSUrl(String apiType, String resource, String name) {
+public static  String generateOSUrl(String apiType, String resource, String name) {
 		
 		Properties props = Constants.readProperties();
 		
-		return String.format("%s%s%s%s%s%s", 
+		if (apiType.equals("apis"))
+		{
+			
+			if(resource.equals("buildconfigs"))
+				apiType = apiType + "/build.openshift.io";
+			if(resource.equals("imagestreams"))
+				apiType = apiType + "/image.openshift.io";
+		}
+		
+		return String.format("%s%s%s%s%s%s%s%s", 
 				props.getProperty("OS_ENDPOINT"),
 				apiType,
 				"/v1/namespaces/",
@@ -73,8 +82,7 @@ public String generateOSUrl(String apiType, String resource, String name) {
 				"/",
 				resource,
 				"/",
-				name,
-				"/instantiate"
+				name
 				);
 		
 	}

@@ -33,9 +33,16 @@ public class OSController {
 	
 	
 	@GetMapping()
-	ResponseEntity<String> getData(@RequestParam Map<String, String> params) {
+	ResponseEntity<String> getBuilds(@RequestParam Map<String, String> params) {
 			
 		return client.getBuildConfigs();
+		
+	}
+	
+	@GetMapping("image/{imageName}")
+	ResponseEntity<String> getImageStream(@PathVariable String imageName) {
+			
+		return client.getImageStream(imageName);
 		
 	}
 	

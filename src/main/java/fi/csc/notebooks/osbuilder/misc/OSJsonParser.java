@@ -7,18 +7,28 @@ import java.util.Map;
 
 import org.springframework.stereotype.Component;
 
-
+import com.google.gson.JsonElement;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSyntaxException;
 
-@Component
-public class OSJsonParser {
+public final class OSJsonParser {
 	
+	public static String parseImageStream(String respBody) {
+		
+		JsonElement jsonBody = JsonParser.parseString(respBody);
+		
+		
+		String imageUrl = jsonBody.getAsJsonObject()
+		.get("status").getAsJsonObject()
+		.get("dockerImageRepository").getAsString();
+		
+		return imageUrl;
+	}
 	
-	public JsonObject getPOSTBody(String kind, Map<String,String> params) {
+	public static JsonObject getPOSTBody(String kind, Map<String,String> params) {
 		
 		JsonObject root = readJson(kind);
 		
@@ -31,7 +41,7 @@ public class OSJsonParser {
 		
 	}
 	
-	public JsonObject getPOSTBody(String kind, String name) {
+	public static JsonObject getPOSTBody(String kind, String name) {
 	
 		JsonObject root = readJson(kind);
 		
@@ -41,7 +51,7 @@ public class OSJsonParser {
 		return root;
 	}
 	
-	private JsonObject readJson(String kind) {
+	private static JsonObject readJson(String kind) {
 		
 		String filename = "";
 		
@@ -70,7 +80,7 @@ public class OSJsonParser {
 	}
 	
 	
-	private JsonObject substituteVarsBuildConfig(JsonObject root, Map<String,String> map) {
+	private static JsonObject substituteVarsBuildConfig(JsonObject root, Map<String,String> map) {
 		
 		JsonPrimitive jName = new JsonPrimitive(map.get("name"));
 		JsonPrimitive jImageTag = new JsonPrimitive(map.get("imagetag"));
@@ -92,7 +102,7 @@ public class OSJsonParser {
 	}
 	
 	
-private JsonObject substituteVarsImageStream(JsonObject root, Map<String,String> map) {
+private static JsonObject substituteVarsImageStream(JsonObject root, Map<String,String> map) {
 		
 		JsonPrimitive jName = new JsonPrimitive(map.get("name"));
 		
@@ -109,7 +119,7 @@ private JsonObject substituteVarsImageStream(JsonObject root, Map<String,String>
 
 
 
-private JsonObject substituteVarsBuildRequest(JsonObject root, String name) {
+private static JsonObject substituteVarsBuildRequest(JsonObject root, String name) {
 	
 	JsonPrimitive jName = new JsonPrimitive(name);
 	
