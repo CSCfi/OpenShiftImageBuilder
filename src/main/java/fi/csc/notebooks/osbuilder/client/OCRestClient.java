@@ -71,17 +71,13 @@ public ResponseEntity<String> getImageStream(String imageName) {
 		HttpEntity<String> entity = new HttpEntity<String>(this.getHeaders());
 		
 		String imageStreamURL = Constants.generateOSUrl("apis", "imagestreams", imageName);
-		
-		System.out.println(imageStreamURL);
-		
+			
 		ResponseEntity<String> resp = rt.exchange(imageStreamURL, 
 				HttpMethod.GET, 
 				entity, 
 				String.class
 				);
-		
-		System.out.println(resp);
-		
+			
 		if (resp.getStatusCode().is2xxSuccessful())
 			return new ResponseEntity<String>(
 					OSJsonParser.parseImageStream(resp.getBody()), 

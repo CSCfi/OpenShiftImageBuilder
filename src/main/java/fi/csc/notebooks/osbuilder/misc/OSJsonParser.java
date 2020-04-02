@@ -5,7 +5,6 @@ import java.io.FileReader;
 import java.util.Map;
 
 
-import org.springframework.stereotype.Component;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonIOException;

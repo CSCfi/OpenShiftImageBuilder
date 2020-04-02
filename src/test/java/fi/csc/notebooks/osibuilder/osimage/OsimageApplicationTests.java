@@ -35,9 +35,7 @@ class OsimageApplicationTests {
 
 	@Autowired
 	MockMvc mvc;
-	
-	OSJsonParser parser;
-	
+		
 	@MockBean
 	OCRestClient client;
 	
@@ -45,9 +43,6 @@ class OsimageApplicationTests {
 	@BeforeEach
 	void setUp() throws URISyntaxException, ValidationException {
 		
-		
-		parser = new OSJsonParser();
-	
 		Map<String, String> params = new HashMap<String, String>();
 		params.put("name", "custom_mock");
 		params.put("imagetag", "custom_mock:latest");
@@ -172,7 +167,7 @@ class OsimageApplicationTests {
 		params.put("imagetag", "custom_mock:latest");
 		params.put("uri", "https://github.com/testrepo");
 		
-		JsonObject root = parser.getPOSTBody("BuildConfig", params);
+		JsonObject root = OSJsonParser.getPOSTBody("BuildConfig", params);
 		
 		String actual_name = root.get("metadata").getAsJsonObject().get("name").getAsString();
 		
@@ -201,7 +196,7 @@ class OsimageApplicationTests {
 		Map<String,String> params = new HashMap<String,String>();
 		params.put("name","custom_mock");
 		
-		JsonObject root = parser.getPOSTBody("ImageStream", params);
+		JsonObject root = OSJsonParser.getPOSTBody("ImageStream", params);
 		
 		String actual_name = root.get("metadata").getAsJsonObject().get("name").getAsString();
 		
@@ -216,7 +211,7 @@ class OsimageApplicationTests {
 		Map<String,String> params = new HashMap<String,String>();
 		params.put("name","custom_mock");
 		
-		JsonObject root = parser.getPOSTBody("BuildRequest", params);
+		JsonObject root = OSJsonParser.getPOSTBody("BuildRequest", params);
 		
 		String actual_name = root.get("metadata").getAsJsonObject().get("name").getAsString();
 		
