@@ -2,6 +2,7 @@ package fi.csc.notebooks.osibuilder.osimage;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -89,8 +90,14 @@ class OsimageApplicationTests {
 		.thenReturn(new ResponseEntity<String>(HttpStatus.CREATED));
 		
 		Mockito
-		.when(client.postBuildRequest(null))
+		.when(client.postBuildRequest("non_existent_build"))
 		.thenReturn(new ResponseEntity<String>(HttpStatus.NOT_ACCEPTABLE));
+		
+		/** Parameters for getting the image **/
+		
+		Mockito
+		.when(client.getImageStream("custom_mock"))
+		.thenReturn(new ResponseEntity<String>(HttpStatus.CREATED));
 		
 		/** Delete build **/
 		
@@ -103,14 +110,13 @@ class OsimageApplicationTests {
 	void buildRequestTest() throws Exception {
 		
 		mvc.perform(
-				post("/builds/start/")
-				.param("name", "custom_mock")
+				post("/builds/start/custom_mock")
 				)
 		.andExpect(status().isCreated());
 		
 		
 		mvc.perform(
-				post("/builds/start/")
+				post("/builds/start/non_existent_build")
 				)
 		.andExpect(status().isNotAcceptable());
 		
@@ -122,7 +128,7 @@ class OsimageApplicationTests {
 		
 		
 		mvc.perform(
-				post("/builds/")
+				post("/builds/create")
 				.param("name", "custom_mock")
 				.param("imagetag", "custom_mock:latest")
 				.param("uri", "https://github.com/mockrepo")
@@ -131,19 +137,30 @@ class OsimageApplicationTests {
 		
 		
 		mvc.perform(
-				post("/builds/")
+				post("/builds/create")
 				.param("name", "custom_mock")
 				.param("imagetag", "custom_mock:latest")
 				)
 		.andExpect(status().isNotAcceptable());
 		
 		mvc.perform(
-				post("/builds/")
+				post("/builds/create")
 				.param("name", "imagename_error")
 				.param("imagetag", "custom_mock:latest")
 				.param("uri", "https://github.com/mockrepo")
 				)
 		.andExpect(status().isNotAcceptable());
+		
+	}
+	
+	@Test 
+	void getImageStream() throws Exception {
+		
+		mvc.perform(
+				get("/builds/image/custom_mock")
+				)
+		.andExpect(status().isCreated());
+		
 		
 	}
 	
@@ -208,14 +225,13 @@ class OsimageApplicationTests {
 	@Test
 	void BuildRequestJsonBodyTest() {
 		
-		Map<String,String> params = new HashMap<String,String>();
-		params.put("name","custom_mock");
+		String expected_name = "custom_name";
 		
-		JsonObject root = OSJsonParser.getPOSTBody("BuildRequest", params);
+		JsonObject root = OSJsonParser.getPOSTBody("BuildRequest", expected_name);
 		
 		String actual_name = root.get("metadata").getAsJsonObject().get("name").getAsString();
 		
-		assertEquals("custom_mock", actual_name);
+		assertEquals(expected_name, actual_name);
 		
 	}
 }
