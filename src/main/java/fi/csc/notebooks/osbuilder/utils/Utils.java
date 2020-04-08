@@ -1,12 +1,15 @@
-package fi.csc.notebooks.osbuilder.constants;
+package fi.csc.notebooks.osbuilder.utils;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Optional;
 import java.util.Properties;
 
+import org.apache.commons.codec.digest.DigestUtils;
 
-public final class Constants {
+
+public final class Utils {
 
 	public static final String PROPERTIES_FILEPATH = "/run/os.properties";
 	
@@ -37,7 +40,7 @@ public final class Constants {
 	 */
 	public static String generateOSUrl(String apiType, String resource) {
 		
-		Properties props = Constants.readProperties();
+		Properties props = Utils.readProperties();
 		
 		if (apiType.equals("apis"))
 		{
@@ -63,7 +66,7 @@ public final class Constants {
 	
 public static  String generateOSUrl(String apiType, String resource, String name) {
 		
-		Properties props = Constants.readProperties();
+		Properties props = Utils.readProperties();
 		
 		if (apiType.equals("apis"))
 		{
@@ -89,11 +92,28 @@ public static  String generateOSUrl(String apiType, String resource, String name
 
 public String generateOAUTHUrl() {
 	
-	Properties props = Constants.readProperties();
+	Properties props = Utils.readProperties();
 	
 	return String.format("%s%s", 
 			props.getProperty("OS_ENDPOINT"),
 			"oauth/authorize"
 			);
 	}
+
+public static String generateHash(String url, Optional<String> branch, Optional<String> contextDir) {
+	
+	StringBuilder sb = new StringBuilder(url);
+	
+	if (branch.isPresent())
+		sb.append(branch.get());
+	
+	if (contextDir.isPresent())
+		sb.append(contextDir.get());
+	
+	return DigestUtils.sha1Hex(sb.toString());
+	
+	
+}
+
+
 }

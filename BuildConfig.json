@@ -2,7 +2,7 @@
 	"apiVersion": "v1",
 	"kind": "BuildConfig",
   	"metadata": {
-    	"name": "custom" //Replace this
+    	"name": "custom" // Replace this
   	},
   "spec":{
     

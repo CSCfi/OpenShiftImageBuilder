@@ -4,14 +4,20 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.net.URISyntaxException;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import javax.xml.bind.ValidationException;
 
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -26,6 +32,7 @@ import com.google.gson.JsonObject;
 
 import fi.csc.notebooks.osbuilder.client.OCRestClient;
 import fi.csc.notebooks.osbuilder.misc.OSJsonParser;
+import fi.csc.notebooks.osbuilder.utils.Utils;
 
 @WebMvcTest
 class OsimageApplicationTests {
@@ -44,79 +51,127 @@ class OsimageApplicationTests {
 	@BeforeEach
 	void setUp() throws URISyntaxException, ValidationException {
 		
-		Map<String, String> params = new HashMap<String, String>();
-		params.put("name", "custom_mock");
-		params.put("imagetag", "custom_mock:latest");
-		params.put("uri", "https://github.com/mockrepo");
+		String uri = "https://github.com/mockrepo";
+		Optional<String> branch = Optional.of("master");
+		Optional<String> contextDir = Optional.of("/home");
+		String hash_all = Utils.generateHash(uri, branch, contextDir);
 		
 		
 		Mockito
-		.when(client.postBuildConfig(params))
+		.when(client.postBuildConfig(hash_all, uri, branch, contextDir))
 		.thenReturn(new ResponseEntity<String>(HttpStatus.CREATED));
 		
 		
 		Mockito
-		.when(client.postImageStreamConfig(params))
+		.when(client.postImageStreamConfig(hash_all))
 		.thenReturn(new ResponseEntity<String>(HttpStatus.CREATED));
 		
 		/** When URL is absent **/
-		Map<String, String> params_nourl = new HashMap<String, String>();
-		params_nourl.put("name", "custom_mock");
-		params_nourl.put("imagetag", "custom_mock:latest");
+		
+		String hash_nouri = Utils.generateHash("", branch, contextDir);
 		
 		Mockito
-		.when(client.postBuildConfig(params_nourl))
+		.when(client.postBuildConfig(hash_nouri, "", branch, contextDir))
 		.thenReturn(new ResponseEntity<String>(HttpStatus.NOT_ACCEPTABLE));
+		
+		
+		/** When the branch is missing , then openshift takes the default master **/
+		
+		Optional<String> nobranch = Optional.empty();
+		String hash_nobranch = Utils.generateHash(uri, nobranch, contextDir);
+		
+		Mockito
+		.when(client.postBuildConfig(hash_nobranch, uri, nobranch, contextDir))
+		.thenReturn(new ResponseEntity<String>(HttpStatus.CREATED));
+		
+		/** When the contextdir is missing, openshift takes the root dir **/
+		
+		Optional<String> no_dir = Optional.empty();
+		String hash_nodir = Utils.generateHash(uri, branch, no_dir);
+		
+		Mockito
+		.when(client.postBuildConfig(hash_nodir, uri, branch, no_dir))
+		.thenReturn(new ResponseEntity<String>(HttpStatus.CREATED));
+		
+		/** When both the branch and contextDir are missing, openshift takes the default values **/
+		
+		String hash_nobranch_nodir = Utils.generateHash(uri, nobranch, no_dir);
+		
+		Mockito
+		.when(client.postBuildConfig(hash_nobranch_nodir, uri, nobranch, contextDir))
+		.thenReturn(new ResponseEntity<String>(HttpStatus.CREATED));
+		
 		
 		/** When the build config creation succeeds but imagestream creation fails **/
 		
-		Map<String,String> params_imagestream_error = new HashMap<String, String>(params);
-		params_imagestream_error.replace("name", "imagename_error");
+		String uri_image_error = "https://github.com/mock_image_error_repo";
+		
+		String hash_imagestream_error = Utils.generateHash(uri_image_error, branch, contextDir);
 		
 		Mockito
-		.when(client.postBuildConfig(params_imagestream_error))
+		.when(client.postBuildConfig(hash_imagestream_error, uri_image_error, branch, contextDir))
 		.thenReturn(new ResponseEntity<String>(HttpStatus.CREATED));
 		
 		Mockito
-		.when(client.postImageStreamConfig(params_imagestream_error))
+		.when(client.postImageStreamConfig(hash_imagestream_error))
 		.thenReturn(new ResponseEntity<String>(HttpStatus.NOT_ACCEPTABLE));
 		
 		/** Parameters for starting the build **/
 		
-		String buildName = "custom_mock";
-		
 		Mockito
-		.when(client.postBuildRequest(buildName))
+		.when(client.postBuildRequest(hash_all))
 		.thenReturn(new ResponseEntity<String>(HttpStatus.CREATED));
 		
+		String uri_another = "https://github.com/anothermockrepo";
+		String hash_build_does_not_exist = Utils.generateHash(uri_another, branch, contextDir);
+		
 		Mockito
-		.when(client.postBuildRequest("non_existent_build"))
+		.when(client.postBuildRequest(hash_build_does_not_exist))
 		.thenReturn(new ResponseEntity<String>(HttpStatus.NOT_ACCEPTABLE));
 		
 		/** Parameters for getting the image **/
 		
+		List<String> imageUrls = new LinkedList<String>();
+		imageUrls.add("dockerImageUrl1");
+		imageUrls.add("dockerImageUrl2");
+		
 		Mockito
-		.when(client.getImageStream("custom_mock"))
-		.thenReturn(new ResponseEntity<String>(HttpStatus.CREATED));
+		.when(client.getImageStreams())
+		.thenReturn(new ResponseEntity<List<String>>(imageUrls, HttpStatus.OK));
+		
+		List<String> imageUrl = new LinkedList<String>();
+		imageUrl.add("dockerImageUrl1");
+		
+		Mockito
+		.when(client.getImageStream(hash_all))
+		.thenReturn(new ResponseEntity<List<String>>(imageUrl, HttpStatus.OK));
 		
 		/** Delete build **/
 		
 		Mockito
-		.when(client.deleteBuildConfig("custom"))
+		.when(client.deleteBuildConfig(hash_all))
 		.thenReturn(new ResponseEntity<String>(HttpStatus.OK));
 	}
 	
 	@Test
 	void buildRequestTest() throws Exception {
 		
+		String uri = "https://github.com/mockrepo";
+		Optional<String> branch = Optional.of("master");
+		Optional<String> contextDir = Optional.of("/home");
+		String hash_all = Utils.generateHash(uri, branch, contextDir);
+		
 		mvc.perform(
-				post("/builds/start/custom_mock")
+				post(String.format("%s%s","/api/builds/start/",hash_all))
 				)
 		.andExpect(status().isCreated());
 		
 		
+		String uri_another = "https://github.com/anothermockrepo";
+		String hash_build_does_not_exist = Utils.generateHash(uri_another, branch, contextDir);
+		
 		mvc.perform(
-				post("/builds/start/non_existent_build")
+				post(String.format("%s%s","/api/builds/start/",hash_build_does_not_exist))
 				)
 		.andExpect(status().isNotAcceptable());
 		
@@ -126,41 +181,64 @@ class OsimageApplicationTests {
 	@Test
 	void buildAndImagetest() throws Exception {
 		
+		String uri = "https://github.com/mockrepo";
+		Optional<String> branch = Optional.of("master");
+		Optional<String> contextDir = Optional.of("/home");
+		String hash_all = Utils.generateHash(uri, branch, contextDir);
+		
 		
 		mvc.perform(
-				post("/builds/create")
-				.param("name", "custom_mock")
-				.param("imagetag", "custom_mock:latest")
-				.param("uri", "https://github.com/mockrepo")
+				post("/api/builds")
+				.param("url", "https://github.com/mockrepo")
+				.param("branch", "master")
+				.param("contextDir", "/home")
 				)
 		.andExpect(status().isCreated());
 		
 		
 		mvc.perform(
-				post("/builds/create")
-				.param("name", "custom_mock")
-				.param("imagetag", "custom_mock:latest")
+				post("/api/builds")
+				.param("url", "")
+				.param("branch", "master")
+				.param("contextDir", "/home")
 				)
 		.andExpect(status().isNotAcceptable());
 		
-		mvc.perform(
-				post("/builds/create")
-				.param("name", "imagename_error")
-				.param("imagetag", "custom_mock:latest")
-				.param("uri", "https://github.com/mockrepo")
-				)
-		.andExpect(status().isNotAcceptable());
 		
 	}
 	
 	@Test 
 	void getImageStream() throws Exception {
 		
+		/*
+		String hash_all = Utils.generateHash("https://github.com/mockrepo", 
+				Optional.of("master"), 
+				Optional.of("/home"));
+		*/
+		
 		mvc.perform(
-				get("/builds/image/custom_mock")
+				get("/api/images")
+				)
+		.andExpect(status().isOk())
+		.andExpect(jsonPath("$").isArray())
+		.andExpect(jsonPath("$", Matchers.hasSize(2)));
+		
+		mvc.perform(
+				get("/api/images")
+				.param("url", "https://github.com/mockrepo")
+				.param("branch", "master")
+				.param("contextDir", "/home")
+				)
+		.andExpect(status().isOk())
+		.andExpect(jsonPath("$").isArray())
+		.andExpect(jsonPath("$", Matchers.hasSize(1)));
+		
+		/*
+		mvc.perform(
+				get(String.format("%s%s", "/api/images/", hash_all))
 				)
 		.andExpect(status().isCreated());
-		
+		*/
 		
 	}
 	
@@ -168,7 +246,7 @@ class OsimageApplicationTests {
 	void buildDeleteTest() throws Exception {
 		
 		mvc.perform(
-				delete("/builds/delete/custom")
+				delete("/api/builds/delete/custom")
 				)
 		.andExpect(status().isOk());
 		
@@ -179,23 +257,23 @@ class OsimageApplicationTests {
 	@Test
 	void buildConfigJsonBodyTest() {
 		
-		Map<String,String> params = new HashMap<String,String>();
-		params.put("name","custom_mock");
-		params.put("imagetag", "custom_mock:latest");
-		params.put("uri", "https://github.com/testrepo");
+		String uri = "https://github.com/mockrepo";
+		Optional<String> branch = Optional.of("master");
+		Optional<String> contextDir = Optional.of("/home");
+		String hash_all = Utils.generateHash(uri, branch, contextDir);
 		
-		JsonObject root = OSJsonParser.getPOSTBody("BuildConfig", params);
+		JsonObject root = OSJsonParser.getPOSTBody("BuildConfig", hash_all, uri, branch, contextDir);
 		
 		String actual_name = root.get("metadata").getAsJsonObject().get("name").getAsString();
 		
-		assertEquals("custom_mock", actual_name);
+		assertEquals(hash_all, actual_name);
 		
 		String actual_image_tag = root.get("spec").getAsJsonObject()
 				.get("output").getAsJsonObject()
 				.get("to").getAsJsonObject()
 				.get("name").getAsString();
 		
-		assertEquals("custom_mock:latest", actual_image_tag);
+		assertEquals(hash_all +":latest", actual_image_tag);
 		
 		String actual_uri = root.get("spec").getAsJsonObject()
 				.get("source").getAsJsonObject()
@@ -204,20 +282,19 @@ class OsimageApplicationTests {
 		
 		
 		
-		assertEquals("https://github.com/testrepo", actual_uri);
+		assertEquals(uri, actual_uri);
 	}
 
 	@Test
 	void ImageStreamJsonBodyTest() {
 		
-		Map<String,String> params = new HashMap<String,String>();
-		params.put("name","custom_mock");
+		String hash_all = Utils.generateHash("https://github.com/mockrepo", Optional.of("master"), Optional.of("/home"));
 		
-		JsonObject root = OSJsonParser.getPOSTBody("ImageStream", params);
+		JsonObject root = OSJsonParser.getPOSTBody("ImageStream", hash_all);
 		
 		String actual_name = root.get("metadata").getAsJsonObject().get("name").getAsString();
 		
-		assertEquals("custom_mock", actual_name);
+		assertEquals(hash_all, actual_name);
 		
 	}
 	
@@ -225,13 +302,13 @@ class OsimageApplicationTests {
 	@Test
 	void BuildRequestJsonBodyTest() {
 		
-		String expected_name = "custom_name";
+		String hash_all = Utils.generateHash("https://github.com/mockrepo", Optional.of("master"), Optional.of("/home"));
 		
-		JsonObject root = OSJsonParser.getPOSTBody("BuildRequest", expected_name);
+		JsonObject root = OSJsonParser.getPOSTBody("BuildRequest", hash_all);
 		
 		String actual_name = root.get("metadata").getAsJsonObject().get("name").getAsString();
 		
-		assertEquals(expected_name, actual_name);
+		assertEquals(hash_all, actual_name);
 		
 	}
 }

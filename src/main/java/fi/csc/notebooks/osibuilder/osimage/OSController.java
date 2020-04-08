@@ -1,10 +1,13 @@
 package fi.csc.notebooks.osibuilder.osimage;
 
 import java.net.URISyntaxException;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import javax.xml.bind.ValidationException;
 
+import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.http.HttpStatus;
@@ -19,12 +22,13 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import fi.csc.notebooks.osbuilder.client.OCRestClient;
+import fi.csc.notebooks.osbuilder.utils.Utils;
 
 @SpringBootApplication(scanBasePackages = {
 "fi.csc.notebooks.osbuilder.client"})
 @RestController
 @CrossOrigin
-@RequestMapping(value="/builds")
+@RequestMapping(value="/api")
 public class OSController {
 
 	
@@ -32,32 +36,66 @@ public class OSController {
 	OCRestClient client;
 	
 	
-	@GetMapping()
-	ResponseEntity<String> getBuilds(@RequestParam Map<String, String> params) {
-			
+	@GetMapping("/builds")
+	ResponseEntity<String> getBuild(
+			@RequestParam Optional<String> url,
+			@RequestParam Optional<String> branch,
+			@RequestParam Optional<String> contextDir) {
+		
+		
+		if(url.isPresent()){
+			String uri  = url.get();
+			String hash = Utils.generateHash(uri, branch, contextDir);
+			return client.getBuildConfig(hash);
+		}
 		return client.getBuildConfigs();
 		
 	}
 	
-	@GetMapping("image/{imageName}")
-	ResponseEntity<String> getImageStream(@PathVariable String imageName) {
-			
-		return client.getImageStream(imageName);
+	
+	@GetMapping("/images")
+	ResponseEntity<List<String>> getImageStream(
+			@RequestParam Optional<String> url,
+			@RequestParam Optional<String> branch,
+			@RequestParam Optional<String> contextDir) {
 		
+		
+		if(url.isPresent()){
+			String uri  = url.get();
+			String hash = Utils.generateHash(uri, branch, contextDir);
+			return client.getImageStream(hash);
+		}
+		
+		return client.getImageStreams();
 	}
 	
-	@PostMapping("/create")
-	ResponseEntity<String> postBuild(@RequestParam Map<String, String> params) throws URISyntaxException{
+	
+	/*
+	@GetMapping("/images/{buildId}")
+	ResponseEntity<String> getImageStream(@PathVariable String buildId) {
 		
-		ResponseEntity<String> build_resp = client.postBuildConfig(params);
+		return client.getImageStream(buildId);
+		
+	}
+	*/
+	
+	@PostMapping("/builds")
+	ResponseEntity<String> postBuild(@RequestParam String url,
+			@RequestParam Optional<String> branch,
+			@RequestParam Optional<String> contextDir
+			) throws URISyntaxException{
+		
+		String hash = Utils.generateHash(url, branch, contextDir);
+		
+		ResponseEntity<String> build_resp = client.postBuildConfig(hash, url, branch, contextDir);
 		if (!build_resp.getStatusCode().is2xxSuccessful()) // Error
 			return build_resp;
 		
-		ResponseEntity<String> image_resp = client.postImageStreamConfig(params);
+		ResponseEntity<String> image_resp = client.postImageStreamConfig(hash);
 		if (!image_resp.getStatusCode().is2xxSuccessful())  // Error
 		{
 			try {
-			client.deleteBuildConfig(params.get("name")); // Backtrack the created build config object
+			client.deleteBuildConfig(hash); // Backtrack the created build config object
 			}
 			catch (Exception e) {
 				return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
@@ -70,7 +108,7 @@ public class OSController {
 		return result;
 	}
 	
-	@PostMapping("/start/{buildName}")
+	@PostMapping("/builds/start/{buildName}")
 	ResponseEntity<String> startBuild(@PathVariable String buildName) throws URISyntaxException{
 		
 		
@@ -87,7 +125,7 @@ public class OSController {
 		
 	}
 	
-	@DeleteMapping("/delete/{buildName}")
+	@DeleteMapping("/builds/delete/{buildName}")
 	ResponseEntity<String> deleteBuild(@PathVariable String buildName) throws URISyntaxException{
 		
 		ResponseEntity<String> resp = client.deleteBuildConfig(buildName);
