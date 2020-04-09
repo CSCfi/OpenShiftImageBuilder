@@ -25,6 +25,7 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import fi.csc.notebooks.osbuilder.misc.OSJsonParser;
+import fi.csc.notebooks.osbuilder.models.BuildStatusImage;
 import fi.csc.notebooks.osbuilder.utils.Utils;
 
 @Service
@@ -90,7 +91,50 @@ public class OCRestClient {
 		return resp;
 
 	}
+	
+	//  https://rahti.csc.fi:8443/apis/build.openshift.io/v1/namespaces/pebbles/builds?labelSelector=buildconfig
+	public ResponseEntity<String> getBuilds(String buildId) {
 
+
+		HttpEntity<String> entity = new HttpEntity<String>(this.getHeaders());
+
+		String buildURL = Utils.generateOSUrl("apis", "builds") + "?labelSelector={label}";
+
+		System.out.println(buildURL);
+
+
+		ResponseEntity<String> resp = rt.exchange(buildURL, 
+				HttpMethod.GET, 
+				entity, 
+				String.class,
+				String.format("buildconfig=%s", buildId)
+				);
+
+
+
+		return resp;
+
+	}
+
+	public ResponseEntity<BuildStatusImage> getBuildsStatus(String buildId) {
+
+
+		HttpEntity<String> entity = new HttpEntity<String>(this.getHeaders());
+
+		String buildURL = Utils.generateOSUrl("apis", "builds") + "?labelSelector={label}";
+
+		ResponseEntity<String> resp = rt.exchange(buildURL, 
+				HttpMethod.GET, 
+				entity, 
+				String.class,
+				String.format("buildconfig=%s", buildId)
+				);
+
+		
+		BuildStatusImage bsi = OSJsonParser.parseBuildList(resp.getBody());
+		return new ResponseEntity<BuildStatusImage>(bsi,HttpStatus.OK);
+
+	}
 
 	public ResponseEntity<List<String>> getImageStreams() {
 

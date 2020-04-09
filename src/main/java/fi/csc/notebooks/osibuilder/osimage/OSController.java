@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import fi.csc.notebooks.osbuilder.client.OCRestClient;
+import fi.csc.notebooks.osbuilder.models.BuildStatusImage;
 import fi.csc.notebooks.osbuilder.utils.Utils;
 
 @SpringBootApplication(scanBasePackages = {
@@ -36,8 +37,8 @@ public class OSController {
 	OCRestClient client;
 	
 	
-	@GetMapping("/builds")
-	ResponseEntity<String> getBuild(
+	@GetMapping("/buildconfigs")
+	ResponseEntity<String> getBuildConfig(
 			@RequestParam Optional<String> url,
 			@RequestParam Optional<String> branch,
 			@RequestParam Optional<String> contextDir) {
@@ -79,8 +80,8 @@ public class OSController {
 	}
 	*/
 	
-	@PostMapping("/builds")
-	ResponseEntity<String> postBuild(@RequestParam String url,
+	@PostMapping("/buildconfigs")
+	ResponseEntity<String> postBuildConfig(@RequestParam String url,
 			@RequestParam Optional<String> branch,
 			@RequestParam Optional<String> contextDir
 			) throws URISyntaxException{
@@ -106,6 +107,21 @@ public class OSController {
 		
 		ResponseEntity<String> result = new ResponseEntity<String>(HttpStatus.CREATED); // OK
 		return result;
+	}
+	
+	
+	@GetMapping("/builds/{buildId}")
+	ResponseEntity<String> getBuilds(@PathVariable String buildId) { // Not used, mainly for future development, so return String for now
+		
+		return client.getBuilds(buildId);
+		
+	}
+	
+	@GetMapping("/builds/status/{buildId}")
+	ResponseEntity<BuildStatusImage> getBuildsStatus(@PathVariable String buildId) {
+		
+		return client.getBuildsStatus(buildId);
+		
 	}
 	
 	@PostMapping("/builds/start/{buildName}")

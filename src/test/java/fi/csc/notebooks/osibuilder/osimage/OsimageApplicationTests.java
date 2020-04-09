@@ -32,6 +32,7 @@ import com.google.gson.JsonObject;
 
 import fi.csc.notebooks.osbuilder.client.OCRestClient;
 import fi.csc.notebooks.osbuilder.misc.OSJsonParser;
+import fi.csc.notebooks.osbuilder.models.BuildStatusImage;
 import fi.csc.notebooks.osbuilder.utils.Utils;
 
 @WebMvcTest
@@ -129,6 +130,22 @@ class OsimageApplicationTests {
 		.when(client.postBuildRequest(hash_build_does_not_exist))
 		.thenReturn(new ResponseEntity<String>(HttpStatus.NOT_ACCEPTABLE));
 		
+		/** Setup for getting the builds and build status **/
+		
+		Mockito
+		.when(client.getBuilds(hash_all))
+		.thenReturn(new ResponseEntity<String>(HttpStatus.OK));
+		
+		BuildStatusImage bsi = new BuildStatusImage();
+		bsi.setImageUrl("dockerImageUrl1");
+		bsi.setStatus("running");
+		
+		Mockito
+		.when(client.getBuildsStatus(hash_all))
+		.thenReturn(new ResponseEntity<BuildStatusImage>(bsi, HttpStatus.OK));
+		
+		
+		
 		/** Parameters for getting the image **/
 		
 		List<String> imageUrls = new LinkedList<String>();
@@ -188,7 +205,7 @@ class OsimageApplicationTests {
 		
 		
 		mvc.perform(
-				post("/api/builds")
+				post("/api/buildconfigs")
 				.param("url", "https://github.com/mockrepo")
 				.param("branch", "master")
 				.param("contextDir", "/home")
@@ -197,7 +214,7 @@ class OsimageApplicationTests {
 		
 		
 		mvc.perform(
-				post("/api/builds")
+				post("/api/buildconfigs")
 				.param("url", "")
 				.param("branch", "master")
 				.param("contextDir", "/home")
@@ -240,6 +257,27 @@ class OsimageApplicationTests {
 		.andExpect(status().isCreated());
 		*/
 		
+	}
+	
+	@Test
+	void buildTest() throws Exception {
+		
+		String hash_all = Utils.generateHash("https://github.com/mockrepo", 
+				Optional.of("master"), 
+				Optional.of("/home"));
+		
+		mvc.perform(
+				get(String.format("%s%s", "/api/builds/", hash_all))
+				)
+		.andExpect(status().isOk());
+		
+		mvc.perform(
+				get(String.format("%s%s", "/api/builds/status/", hash_all))
+				)
+		.andExpect(status().isOk())
+		.andExpect(jsonPath("$", Matchers.aMapWithSize(2)))
+		.andExpect(jsonPath("$", Matchers.allOf(Matchers.hasKey("status"), Matchers.hasKey("imageUrl"))));
+						
 	}
 	
 	@Test

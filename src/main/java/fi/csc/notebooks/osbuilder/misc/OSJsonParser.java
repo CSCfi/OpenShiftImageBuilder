@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonIOException;
@@ -16,10 +17,43 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSyntaxException;
 
+import fi.csc.notebooks.osbuilder.models.BuildStatusImage;
 import fi.csc.notebooks.osbuilder.utils.Utils;
 
 public final class OSJsonParser {
 	
+	
+	
+	public static BuildStatusImage parseBuildList(String respBody) {
+		
+		JsonElement jsonBody = JsonParser.parseString(respBody);
+		JsonObject buildListObj = jsonBody.getAsJsonObject();
+		
+		JsonArray buildList = buildListObj.get("items").getAsJsonArray();
+		
+		int list_size = buildList.size();
+		JsonObject latestItem;
+		
+		BuildStatusImage bsi = new BuildStatusImage();
+		
+		if (list_size>0) {
+			latestItem = buildList.get(list_size-1).getAsJsonObject();
+			
+			JsonObject statusObj = latestItem.get("status").getAsJsonObject();
+			
+			String status = statusObj.get("phase").getAsString();
+			bsi.setStatus(status);
+			
+			String imageUrl = statusObj.get("outputDockerImageReference").getAsString();
+			bsi.setImageUrl(imageUrl);
+			
+		}
+		
+		return bsi;
+		
+		
+		
+	}
 	
 	private static String parseImageDockerUrl(JsonElement imageStreamItem) {
 		
@@ -178,4 +212,5 @@ private static JsonObject substituteVarsBuildRequest(JsonObject root, String has
 	return root;
 	
 }
+
 }
