@@ -2,6 +2,7 @@ package fi.csc.notebooks.osbuilder.client;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -20,9 +21,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
 
 import fi.csc.notebooks.osbuilder.misc.OSJsonParser;
 import fi.csc.notebooks.osbuilder.models.BuildStatusImage;
@@ -81,8 +87,8 @@ public class OCRestClient {
 
 		System.out.println(buildURL);
 
-		
-	
+
+
 		ResponseEntity<String> resp = rt.exchange(buildURL, 
 				HttpMethod.GET, 
 				entity, 
@@ -91,7 +97,7 @@ public class OCRestClient {
 		return resp;
 
 	}
-	
+
 	//  https://rahti.csc.fi:8443/apis/build.openshift.io/v1/namespaces/pebbles/builds?labelSelector=buildconfig
 	public ResponseEntity<String> getBuilds(String buildId) {
 
@@ -116,7 +122,7 @@ public class OCRestClient {
 
 	}
 
-	public ResponseEntity<BuildStatusImage> getBuildsStatus(String buildId) {
+	public ResponseEntity<BuildStatusImage> getBuildsStatus(String buildConfigName) {
 
 
 		HttpEntity<String> entity = new HttpEntity<String>(this.getHeaders());
@@ -127,69 +133,97 @@ public class OCRestClient {
 				HttpMethod.GET, 
 				entity, 
 				String.class,
-				String.format("buildconfig=%s", buildId)
+				String.format("buildconfig=%s", buildConfigName)
 				);
 
-		
+
 		BuildStatusImage bsi = OSJsonParser.parseBuildList(resp.getBody());
+
 		return new ResponseEntity<BuildStatusImage>(bsi,HttpStatus.OK);
 
 	}
 
-	public ResponseEntity<List<String>> getImageStreams() {
+	public ResponseEntity<String> getBuildLogs(String buildName) {
+
+		HttpEntity<String> entity = new HttpEntity<String>(this.getHeaders());
+
+		String buildLogURL = Utils.generateOSUrl("apis", "builds", buildName) + "/log";
+
+		ResponseEntity<String> resp = rt.exchange(buildLogURL, 
+				HttpMethod.GET, 
+				entity, 
+				String.class
+				);
+
+		return resp;
+
+	}
+
+	public ResponseEntity<List<Map<String,String>>> getImageStreams() {
 
 
 		HttpEntity<String> entity = new HttpEntity<String>(this.getHeaders());
 
 		String imageStreamURL = Utils.generateOSUrl("apis", "imagestreams");
 
-		ResponseEntity<String> resp = rt.exchange(
-				imageStreamURL, 
-				HttpMethod.GET, 
-				entity,
-				String.class
-				);
+		ResponseEntity<List<Map<String,String>>> resp = null;
 
-		if (resp.getStatusCode().is2xxSuccessful())
-			return new ResponseEntity<List<String>>(
-					OSJsonParser.parseImageStream(resp.getBody()), 
-					HttpStatus.OK);
+		try {
 
-		
-		List<String> error_resp_list = new LinkedList<String>();
-		error_resp_list.add(resp.getBody());
-		return new ResponseEntity<List<String>>(error_resp_list, resp.getStatusCode());
+			ResponseEntity<String> _resp = rt.exchange(
+					imageStreamURL, 
+					HttpMethod.GET, 
+					entity,
+					String.class
+					);
+
+			resp = new ResponseEntity<List<Map<String,String>>>(
+					OSJsonParser.parseImageStreamList(_resp.getBody()), 
+					_resp.getStatusCode());
+
+		}
+		catch(HttpClientErrorException ex) {
+
+			Map<String, String> ex_map = new HashMap<String, String>();
+			ex_map.put("message", ex.getMessage());
+			List<Map<String,String>> ex_list = new LinkedList<Map<String,String>>();
+			resp = new ResponseEntity<List<Map<String,String>>>(ex_list, ex.getStatusCode());
+
+		}
+
+		return resp;
 
 	}
 
-	public ResponseEntity<List<String>> getImageStream(String imageName) {
+	public ResponseEntity<Map<String,String>> getImageStream(String imageName) {
 
 
 		HttpEntity<String> entity = new HttpEntity<String>(this.getHeaders());
 
 		String imageStreamURL = Utils.generateOSUrl("apis", "imagestreams", imageName);
 
-		//String imageStreamURL = Utils.generateOSUrl("apis", "imagestreams") + "?labelSelector={label}";
+		ResponseEntity<Map<String,String>> res = null;
 
-		System.out.println(imageStreamURL);
+		try {
+			ResponseEntity<String> resp = rt.exchange(
+					imageStreamURL, 
+					HttpMethod.GET, 
+					entity, 
+					String.class
+					//String.format("build=%s", imageName)
+					);
+			if (resp.getStatusCode().is2xxSuccessful())
+				res = new ResponseEntity<Map<String,String>>(
+						OSJsonParser.parseImageStream(resp.getBody()), 
+						HttpStatus.OK);
+		}
+		catch (HttpClientErrorException ex) {
+			Map<String, String> ex_map = new HashMap<String, String>();
+			ex_map.put("message", ex.getMessage());
+			res = new ResponseEntity<Map<String,String>>(ex_map, ex.getStatusCode());
+		}
 
-		ResponseEntity<String> resp = rt.exchange(
-				imageStreamURL, 
-				HttpMethod.GET, 
-				entity, 
-				String.class
-				//String.format("build=%s", imageName)
-				);
-
-		if (resp.getStatusCode().is2xxSuccessful())
-			return new ResponseEntity<List<String>>(
-					OSJsonParser.parseImageStream(resp.getBody()), 
-					HttpStatus.OK);
-
-		List<String> error_resp_list = new LinkedList<String>();
-		error_resp_list.add(resp.getBody());
-		return new ResponseEntity<List<String>>(error_resp_list, resp.getStatusCode());
-
+		return res;
 	}
 
 
@@ -201,6 +235,8 @@ public class OCRestClient {
 
 		String buildURL = Utils.generateOSUrl("oapi", "buildconfigs");
 
+		ResponseEntity<String> resp = null;
+
 		if(uri.isEmpty())
 			return new ResponseEntity<String>(HttpStatus.UNPROCESSABLE_ENTITY);
 
@@ -211,8 +247,13 @@ public class OCRestClient {
 				new URI(buildURL) 
 				); 
 
-		ResponseEntity<String> resp = rt.exchange(e, String.class);
+		try {
+			resp = rt.exchange(e, String.class);
+		}
+		catch(HttpClientErrorException ex) {
 
+			resp = new ResponseEntity<String>(OSJsonParser.parseBuildConfigError(ex.getResponseBodyAsString()), ex.getStatusCode());
+		}
 		return resp;
 	}
 
@@ -286,6 +327,8 @@ public class OCRestClient {
 		return resp;
 
 	}
+
+
 
 }
 

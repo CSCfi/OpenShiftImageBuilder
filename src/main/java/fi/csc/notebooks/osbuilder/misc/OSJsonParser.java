@@ -2,6 +2,7 @@ package fi.csc.notebooks.osbuilder.misc;
 
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -22,7 +23,7 @@ import fi.csc.notebooks.osbuilder.utils.Utils;
 
 public final class OSJsonParser {
 	
-	
+	/** Parse Build and BuildConfig related objects here **/
 	
 	public static BuildStatusImage parseBuildList(String respBody) {
 		
@@ -38,6 +39,9 @@ public final class OSJsonParser {
 		
 		if (list_size>0) {
 			latestItem = buildList.get(list_size-1).getAsJsonObject();
+			
+			String buildName = latestItem.get("metadata").getAsJsonObject().get("name").getAsString();
+			bsi.setBuildName(buildName);
 			
 			JsonObject statusObj = latestItem.get("status").getAsJsonObject();
 			
@@ -55,41 +59,50 @@ public final class OSJsonParser {
 		
 	}
 	
-	private static String parseImageDockerUrl(JsonElement imageStreamItem) {
+	public static String parseBuildConfigError(String respBody){
+		JsonObject root = JsonParser.parseString(respBody).getAsJsonObject();
 		
-		String imageUrl = imageStreamItem.getAsJsonObject()
-				.get("status").getAsJsonObject()
-				.get("dockerImageRepository").getAsString();
+		String buildName = root.get("details").getAsJsonObject().get("name").getAsString();
 		
-		return imageUrl;
+		return buildName;
+		
 	}
-	public static List<String> parseImageStream(String respBody) {
-		
-		List<String> imageUrlList = new LinkedList<String>();
+	
+	
+	/** Parse ImageStream related Objects **/
+	
+	
+	public static Map<String,String> parseImageStream(String respBody) { // ImageStreamKind: ImageStream
 		
 		JsonElement jsonBody = JsonParser.parseString(respBody);
 		JsonObject imageStreamObj = jsonBody.getAsJsonObject();
-		String imageStreamKind = imageStreamObj.get("kind").getAsString();
 		
+		Map<String,String> resp = _parseImageStreamObject(imageStreamObj);
 		
+		return resp;
+	}
+	
+	public static List<Map<String,String>> parseImageStreamList(String respBody) { // ImageStreamKind: ImageStreamList
 		
-		if (imageStreamKind.contentEquals("ImageStreamList")) {
+		List<Map<String,String>> imageUrlList = new LinkedList<Map<String,String>>();
+		
+		JsonElement jsonBody = JsonParser.parseString(respBody);
+		JsonObject imageStreamObj = jsonBody.getAsJsonObject();	
 			
-			JsonArray imageStreamList = imageStreamObj.get("items").getAsJsonArray();
-			Iterator<JsonElement> imageStreamItemIterator = imageStreamList.iterator();
+		JsonArray imageStreamList = imageStreamObj.get("items").getAsJsonArray();
+		Iterator<JsonElement> imageStreamItemIterator = imageStreamList.iterator();
 			
-			while(imageStreamItemIterator.hasNext()) {
-				JsonElement imageStreamItem = imageStreamItemIterator.next();
-				imageUrlList.add(parseImageDockerUrl(imageStreamItem));
+		while(imageStreamItemIterator.hasNext()) {
+			JsonObject imageStreamItem = imageStreamItemIterator.next().getAsJsonObject();
+			imageUrlList.add(_parseImageStreamObject(imageStreamItem));
 				
-			}
 		}
 		
-		else if(imageStreamKind.contentEquals("ImageStream")) {
-			imageUrlList.add(parseImageDockerUrl(jsonBody));
-		}
 		return imageUrlList;
 	}
+	
+	
+	/** Get POST body data for different requests **/
 	
 	public static JsonObject getPOSTBody(
 			String kind, 
@@ -147,6 +160,7 @@ public final class OSJsonParser {
 		
 	}
 	
+	/** All helper functions go here **/
 	
 	private static JsonObject substituteVarsBuildConfig(
 			JsonObject root,
@@ -167,8 +181,10 @@ public final class OSJsonParser {
 			.get("to")
 			.getAsJsonObject().add("name", jImageTag);
 		
-		JsonObject git = root.get("spec").getAsJsonObject()
-		.get("source").getAsJsonObject().get("git").getAsJsonObject();
+		JsonObject source = root.get("spec").getAsJsonObject()
+				.get("source").getAsJsonObject();
+			
+		JsonObject git = source.get("git").getAsJsonObject();
 		
 		git.add("uri", jURI);
 		
@@ -176,7 +192,7 @@ public final class OSJsonParser {
 			git.add("ref", new JsonPrimitive(branch.get()));
 		
 		if (contextDir.isPresent())
-			git.add("contextDir", new JsonPrimitive(contextDir.get()));
+			source.add("contextDir", new JsonPrimitive(contextDir.get()));
 		
 		
 		
@@ -210,6 +226,21 @@ private static JsonObject substituteVarsBuildRequest(JsonObject root, String has
 	.add("name", jName);
 	
 	return root;
+	
+}
+
+private static Map<String, String> _parseImageStreamObject(JsonObject imageStreamObj){
+	
+	String imageName = imageStreamObj.get("metadata").getAsJsonObject().get("name").getAsString();
+	String imageUrl = imageStreamObj.getAsJsonObject()
+			.get("status").getAsJsonObject()
+			.get("dockerImageRepository").getAsString();
+	
+	Map<String, String> resp = new HashMap<String, String>();
+	resp.put("imageName", imageName);
+	resp.put("imageUrl", imageUrl);
+	
+	return resp;
 	
 }
 

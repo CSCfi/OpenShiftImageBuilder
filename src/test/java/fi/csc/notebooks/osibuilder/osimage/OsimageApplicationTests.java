@@ -148,20 +148,27 @@ class OsimageApplicationTests {
 		
 		/** Parameters for getting the image **/
 		
-		List<String> imageUrls = new LinkedList<String>();
-		imageUrls.add("dockerImageUrl1");
-		imageUrls.add("dockerImageUrl2");
+		List<Map<String,String>> imageUrls = new LinkedList<Map<String,String>>();
+		Map<String,String> map1 = new HashMap<String, String>();
+		map1.put("imageUrl", "dockerImageUrl1");
+		map1.put("imageName", "dockerImage1");
+		Map<String,String> map2 = new HashMap<String, String>();
+		map2.put("imageUrl", "dockerImageUrl1");
+		map2.put("imageName", "dockerImage1");
+		imageUrls.add(map1);
+		imageUrls.add(map2);
 		
 		Mockito
 		.when(client.getImageStreams())
-		.thenReturn(new ResponseEntity<List<String>>(imageUrls, HttpStatus.OK));
+		.thenReturn(new ResponseEntity<List<Map<String,String>>>(imageUrls, HttpStatus.OK));
 		
-		List<String> imageUrl = new LinkedList<String>();
-		imageUrl.add("dockerImageUrl1");
+		Map<String,String> map3 = new HashMap<String, String>();
+		map3.put("imageUrl", "dockerImageUrl1");
+		map3.put("imageName", "dockerImage1");
 		
 		Mockito
 		.when(client.getImageStream(hash_all))
-		.thenReturn(new ResponseEntity<List<String>>(imageUrl, HttpStatus.OK));
+		.thenReturn(new ResponseEntity<Map<String,String>>(map3, HttpStatus.OK));
 		
 		/** Delete build **/
 		
@@ -248,7 +255,7 @@ class OsimageApplicationTests {
 				)
 		.andExpect(status().isOk())
 		.andExpect(jsonPath("$").isArray())
-		.andExpect(jsonPath("$", Matchers.hasSize(1)));
+		.andExpect(jsonPath("$", Matchers.hasSize(2)));
 		
 		/*
 		mvc.perform(
@@ -275,7 +282,7 @@ class OsimageApplicationTests {
 				get(String.format("%s%s", "/api/builds/status/", hash_all))
 				)
 		.andExpect(status().isOk())
-		.andExpect(jsonPath("$", Matchers.aMapWithSize(2)))
+		.andExpect(jsonPath("$", Matchers.aMapWithSize(3)))
 		.andExpect(jsonPath("$", Matchers.allOf(Matchers.hasKey("status"), Matchers.hasKey("imageUrl"))));
 						
 	}

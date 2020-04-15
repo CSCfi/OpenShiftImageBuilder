@@ -2,9 +2,18 @@ package fi.csc.notebooks.osbuilder.models;
 
 public class BuildStatusImage {
 
+	private String buildName;
 	private String status;
 	private String imageUrl;
 	
+	
+	
+	public String getBuildName() {
+		return buildName;
+	}
+	public void setBuildName(String buildName) {
+		this.buildName = buildName;
+	}
 	public String getStatus() {
 		return status;
 	}

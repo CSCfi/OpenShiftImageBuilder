@@ -71,7 +71,7 @@ public static  String generateOSUrl(String apiType, String resource, String name
 		if (apiType.equals("apis"))
 		{
 			
-			if(resource.equals("buildconfigs"))
+			if(resource.equals("buildconfigs") || resource.equals("builds"))
 				apiType = apiType + "/build.openshift.io";
 			if(resource.equals("imagestreams"))
 				apiType = apiType + "/image.openshift.io";

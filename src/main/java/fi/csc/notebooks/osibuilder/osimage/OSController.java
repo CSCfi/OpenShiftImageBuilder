@@ -21,6 +21,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.google.gson.JsonObject;
+
 import fi.csc.notebooks.osbuilder.client.OCRestClient;
 import fi.csc.notebooks.osbuilder.models.BuildStatusImage;
 import fi.csc.notebooks.osbuilder.utils.Utils;
@@ -55,21 +57,20 @@ public class OSController {
 	
 	
 	@GetMapping("/images")
-	ResponseEntity<List<String>> getImageStream(
-			@RequestParam Optional<String> url,
-			@RequestParam Optional<String> branch,
-			@RequestParam Optional<String> contextDir) {
-		
-		
-		if(url.isPresent()){
-			String uri  = url.get();
-			String hash = Utils.generateHash(uri, branch, contextDir);
-			return client.getImageStream(hash);
-		}
+	ResponseEntity<List<Map<String,String>>> getImageStreams() {
 		
 		return client.getImageStreams();
 	}
 	
+	@GetMapping("/image")
+	ResponseEntity<Map<String,String>> getImageStream(
+			@RequestParam String url,
+			@RequestParam Optional<String> branch,
+			@RequestParam Optional<String> contextDir) {
+		
+			String hash = Utils.generateHash(url, branch, contextDir);
+			return client.getImageStream(hash);
+	}
 	
 	/*
 	@GetMapping("/images/{buildId}")
@@ -80,7 +81,7 @@ public class OSController {
 	}
 	*/
 	
-	@PostMapping("/buildconfigs")
+	@PostMapping("/buildconfigs")  // TODO: HANDLE 409 CONFLICTS
 	ResponseEntity<String> postBuildConfig(@RequestParam String url,
 			@RequestParam Optional<String> branch,
 			@RequestParam Optional<String> contextDir
@@ -105,7 +106,7 @@ public class OSController {
 		}
 		
 		
-		ResponseEntity<String> result = new ResponseEntity<String>(HttpStatus.CREATED); // OK
+		ResponseEntity<String> result = new ResponseEntity<String>(hash, HttpStatus.CREATED); // OK
 		return result;
 	}
 	
@@ -117,20 +118,20 @@ public class OSController {
 		
 	}
 	
-	@GetMapping("/builds/status/{buildId}")
-	ResponseEntity<BuildStatusImage> getBuildsStatus(@PathVariable String buildId) {
+	@GetMapping("/builds/status/{buildConfigName}")
+	ResponseEntity<BuildStatusImage> getBuildsStatus(@PathVariable String buildConfigName) {
 		
-		return client.getBuildsStatus(buildId);
+		return client.getBuildsStatus(buildConfigName);
 		
 	}
 	
-	@PostMapping("/builds/start/{buildName}")
-	ResponseEntity<String> startBuild(@PathVariable String buildName) throws URISyntaxException{
+	@PostMapping("/builds/start/{buildConfigName}")
+	ResponseEntity<String> startBuild(@PathVariable String buildConfigName) throws URISyntaxException{
 		
 		
 		ResponseEntity<String> result;
 		try {
-			result = client.postBuildRequest(buildName);
+			result = client.postBuildRequest(buildConfigName);
 		} catch (ValidationException e) {
 			// TODO Auto-generated catch block
 			return new ResponseEntity<String>(e.getMessage(), HttpStatus.NOT_ACCEPTABLE);
@@ -138,6 +139,13 @@ public class OSController {
 		
 		return result;
 		
+		
+	}
+	
+	@GetMapping("/builds/logs/{buildName}")
+	ResponseEntity<String> getBuildLogs(@PathVariable String buildName) {
+		
+		return client.getBuildLogs(buildName);
 		
 	}
 	
