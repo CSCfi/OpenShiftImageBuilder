@@ -81,15 +81,40 @@ public class OSController {
 	}
 	*/
 	
-	@PostMapping("/buildconfigs")  // TODO: HANDLE 409 CONFLICTS
-	ResponseEntity<String> postBuildConfig(@RequestParam String url,
+	@GetMapping("/build/{buildId}")
+	ResponseEntity<String> getBuilds(@PathVariable String buildId) { // Not used, mainly for future development, so return String for now
+		
+		return client.getBuilds(buildId);
+		
+	}
+	
+	@GetMapping("/build/status/{buildConfigName}")
+	ResponseEntity<BuildStatusImage> getBuildsStatus(@PathVariable String buildConfigName) {
+		
+		return client.getBuildStatus(buildConfigName);
+		
+	}
+	
+	@GetMapping("/build/logs/{buildName}")
+	ResponseEntity<String> getBuildLogs(@PathVariable String buildName) {
+		
+		return client.getBuildLogs(buildName);
+		
+	}
+	
+	
+	
+	@PostMapping("/buildconfig")  // TODO: HANDLE 409 CONFLICTS
+	ResponseEntity<String> postBuildConfig(
+			@RequestParam String url,
 			@RequestParam Optional<String> branch,
-			@RequestParam Optional<String> contextDir
+			@RequestParam Optional<String> contextDir,
+			@RequestParam Optional<String> dockerfilePath // Special case: Generate the image using dockerfile (no s2i)
 			) throws URISyntaxException{
 		
 		String hash = Utils.generateHash(url, branch, contextDir);
 		
-		ResponseEntity<String> build_resp = client.postBuildConfig(hash, url, branch, contextDir);
+		ResponseEntity<String> build_resp = client.postBuildConfig(hash, url, branch, contextDir, dockerfilePath);
 		if (!build_resp.getStatusCode().is2xxSuccessful()) // Error
 			return build_resp;
 		
@@ -111,21 +136,8 @@ public class OSController {
 	}
 	
 	
-	@GetMapping("/builds/{buildId}")
-	ResponseEntity<String> getBuilds(@PathVariable String buildId) { // Not used, mainly for future development, so return String for now
-		
-		return client.getBuilds(buildId);
-		
-	}
 	
-	@GetMapping("/builds/status/{buildConfigName}")
-	ResponseEntity<BuildStatusImage> getBuildsStatus(@PathVariable String buildConfigName) {
-		
-		return client.getBuildsStatus(buildConfigName);
-		
-	}
-	
-	@PostMapping("/builds/start/{buildConfigName}")
+	@PostMapping("/build/start/{buildConfigName}")
 	ResponseEntity<String> startBuild(@PathVariable String buildConfigName) throws URISyntaxException{
 		
 		
@@ -142,20 +154,29 @@ public class OSController {
 		
 	}
 	
-	@GetMapping("/builds/logs/{buildName}")
-	ResponseEntity<String> getBuildLogs(@PathVariable String buildName) {
+	@DeleteMapping("/buildconfig/{buildConfigName}")
+	ResponseEntity<String> deleteBuildConfig(@PathVariable String buildConfigName) throws URISyntaxException{
 		
-		return client.getBuildLogs(buildName);
-		
-	}
-	
-	@DeleteMapping("/builds/delete/{buildName}")
-	ResponseEntity<String> deleteBuild(@PathVariable String buildName) throws URISyntaxException{
-		
-		ResponseEntity<String> resp = client.deleteBuildConfig(buildName);
+		ResponseEntity<String> resp = client.deleteBuildConfig(buildConfigName);
 		
 		return resp;
 	}
+	
+	
+	@DeleteMapping("/build/{buildName}")
+	ResponseEntity<String> deleteBuild(@PathVariable String buildName) throws URISyntaxException{
 		
+		ResponseEntity<String> resp = client.deleteBuild(buildName);
+		
+		return resp;
+	}
+	
+	@DeleteMapping("/builds/{buildConfigName}")
+	ResponseEntity<String> deleteBuilds(@PathVariable String buildConfigName) throws URISyntaxException{
+		
+		ResponseEntity<String> resp = client.deleteAllBuilds(buildConfigName);
+		
+		return resp;
+	}
 		
 }

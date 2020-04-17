@@ -25,7 +25,7 @@ public final class OSJsonParser {
 	
 	/** Parse Build and BuildConfig related objects here **/
 	
-	public static BuildStatusImage parseBuildList(String respBody) {
+	public static BuildStatusImage parseBuildListForStatusAndImage(String respBody) {
 		
 		JsonElement jsonBody = JsonParser.parseString(respBody);
 		JsonObject buildListObj = jsonBody.getAsJsonObject();
@@ -54,6 +54,28 @@ public final class OSJsonParser {
 		}
 		
 		return bsi;
+		
+		
+		
+	}
+	
+	public static List<String> parseBuildListForNames(String buildsJson){
+		
+		JsonElement jsonBody = JsonParser.parseString(buildsJson);
+		JsonObject buildListObj = jsonBody.getAsJsonObject();
+		JsonArray buildList = buildListObj.get("items").getAsJsonArray();
+		
+		List<String> res = new LinkedList<String>();
+		for (JsonElement item : buildList) {
+			
+			String build_name = item.getAsJsonObject().get("metadata").getAsJsonObject().get("name").getAsString();
+			
+			res.add(build_name);
+			
+		}
+		
+		return res;
+		
 		
 		
 		
@@ -109,65 +131,112 @@ public final class OSJsonParser {
 			String hash,
 			String url, 
 			Optional<String> branch, 
-			Optional<String> contextDir) {
+			Optional<String> contextDir,
+			Optional<String> dockerfilePath) {
 		
-		JsonObject root = readJson(kind);
 		
-		if (kind.equals("BuildConfig"))
-			root = substituteVarsBuildConfig(root, hash, url, branch, contextDir);
+		
+		
+		JsonObject root = null;
+		
+		if (kind.equals("BuildConfig")) {
+			
+			String strategy = "Source"; // Default build strategy
+			
+			if (dockerfilePath.isPresent())
+				strategy = "Docker";
+			
+			root = _readJson(kind, strategy);
+			root = _substituteVarsBuildConfig(root, hash, url, branch, contextDir, dockerfilePath);
+		}
 		return root;
 		
 		
 	}
 	
 	public static JsonObject getPOSTBody(String kind, String hash) {
-	
-		JsonObject root = readJson(kind);
+		
+		JsonObject root = _readJson(kind);
 		
 		if(kind.equals("BuildRequest"))
-			root = substituteVarsBuildRequest(root, hash);
+			root = _substituteVarsBuildRequest(root, hash);
 		else if(kind.equals("ImageStream"))
-			root = substituteVarsImageStream(root, hash);
+			root = _substituteVarsImageStream(root, hash);
 		
 		return root;
 	}
 	
-	private static JsonObject readJson(String kind) {
+	
+	
+	/** All helper functions go here **/
+	
+	private static JsonObject _readJsonFile(String filename) {
 		
-		String filename = "";
-		
-		if (kind.contentEquals("BuildConfig"))
-			filename = kind + ".json";
-		if (kind.contentEquals("ImageStream"))
-			filename = kind + ".json";
-		if (kind.contentEquals("BuildRequest"))
-			filename = kind + ".json";
-		
+	
 		JsonObject root = null;
 		
+		String filepath = "templates/" + filename;
 		
 		try {
-			root = JsonParser.parseReader(new FileReader(filename)).getAsJsonObject();
+			root = JsonParser.parseReader(new FileReader(filepath)).getAsJsonObject();
 		} catch (JsonIOException | JsonSyntaxException | FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 			
 		}
 		
-		
 		return root;
+		
+	}
+	
+	private static JsonObject _readJson(String kind, String strategy) {
+		
+		String filename = "";
+		
+		if (!kind.contentEquals("BuildConfig"))
+			throw new Error("Wrong method called for BuildConfig");
+		
+		filename = kind + strategy + ".json";
+		
+		return _readJsonFile(filename);
 		
 		
 	}
 	
-	/** All helper functions go here **/
+	private static JsonObject _readJson(String kind) {
+		
+		String filename = "";
+		
+		if (kind.contentEquals("ImageStream"))
+			filename = kind + ".json";
+		if (kind.contentEquals("BuildRequest"))
+			filename = kind + ".json";
+		
 	
-	private static JsonObject substituteVarsBuildConfig(
+		return _readJsonFile(filename);
+		
+		
+	}
+	
+	
+	/**
+	 * This method is used for putting the values obtained from the user
+	 * to the BuildConfig object json file
+	 * @param root
+	 * @param hash
+	 * @param url
+	 * @param branch
+	 * @param contextDir
+	 * @param dockerfilePath
+	 * @return
+	 */
+	private static JsonObject _substituteVarsBuildConfig( // By default, BuildConfigSource.json file will be read
 			JsonObject root,
 			String hash,
 			String url, 
 			Optional<String> branch, 
-			Optional<String> contextDir) {
+			Optional<String> contextDir,
+			Optional<String> dockerfilePath) {
 		
 		JsonPrimitive jName = new JsonPrimitive(hash);
 		JsonPrimitive jImageTag = new JsonPrimitive(hash +":latest");
@@ -194,6 +263,15 @@ public final class OSJsonParser {
 		if (contextDir.isPresent())
 			source.add("contextDir", new JsonPrimitive(contextDir.get()));
 		
+		if (dockerfilePath.isPresent()) { // If this option is present, it means BuildConfigDocker.json file has been read
+			
+			JsonObject strategy = root.get("spec").getAsJsonObject()
+					.get("strategy").getAsJsonObject();
+			
+			strategy.get("dockerStrategy").getAsJsonObject()
+			// Replace/Fzill the value of the docker file path, this can be dir (openshift will auto search for dockerfile), or can put the name of the file as well
+			.addProperty("dockerfilePath", dockerfilePath.get()); 
+		}
 		
 		
 		return root;
@@ -201,7 +279,7 @@ public final class OSJsonParser {
 	}
 	
 	
-private static JsonObject substituteVarsImageStream(JsonObject root, String hash) {
+private static JsonObject _substituteVarsImageStream(JsonObject root, String hash) {
 		
 		JsonPrimitive jName = new JsonPrimitive(hash);
 		
@@ -218,7 +296,7 @@ private static JsonObject substituteVarsImageStream(JsonObject root, String hash
 
 
 
-private static JsonObject substituteVarsBuildRequest(JsonObject root, String hash) {
+private static JsonObject _substituteVarsBuildRequest(JsonObject root, String hash) {
 	
 	JsonPrimitive jName = new JsonPrimitive(hash);
 	

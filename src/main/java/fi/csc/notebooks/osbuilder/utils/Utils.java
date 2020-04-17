@@ -11,7 +11,7 @@ import org.apache.commons.codec.digest.DigestUtils;
 
 public final class Utils {
 
-	public static final String PROPERTIES_FILEPATH = "/run/os.properties";
+	public static final String PROPERTIES_FILEPATH = "/run/os.properties"; // Make sure this file is present or mounted as a configmap
 	
 	public static Properties readProperties() {
 		
@@ -35,7 +35,7 @@ public final class Utils {
 	
 	
 	/**
-	 * @param apiType which can be opi for openshift and api for k8s
+	 * @param apiType which can be opi for openshift and apis for k8s
 	 * @return
 	 */
 	public static String generateOSUrl(String apiType, String resource) {
@@ -64,6 +64,13 @@ public final class Utils {
 		
 	}
 	
+/**
+ * Generates url for unique resource based on name
+ * @param apiType
+ * @param resource
+ * @param name
+ * @return
+ */
 public static  String generateOSUrl(String apiType, String resource, String name) {
 		
 		Properties props = Utils.readProperties();
@@ -100,12 +107,22 @@ public String generateOAUTHUrl() {
 			);
 	}
 
+
+/**
+ * Generates unique hash based on given parameters to uniquely identify the buildconfigs and images
+ * @param url
+ * @param branch
+ * @param contextDir
+ * @return
+ */
 public static String generateHash(String url, Optional<String> branch, Optional<String> contextDir) {
 	
 	StringBuilder sb = new StringBuilder(url);
 	
 	if (branch.isPresent())
 		sb.append(branch.get());
+	else
+		sb.append("master"); // the default branch
 	
 	if (contextDir.isPresent())
 		sb.append(contextDir.get());

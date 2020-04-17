@@ -3,6 +3,7 @@ package fi.csc.notebooks.osbuilder.client;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -106,9 +107,6 @@ public class OCRestClient {
 
 		String buildURL = Utils.generateOSUrl("apis", "builds") + "?labelSelector={label}";
 
-		System.out.println(buildURL);
-
-
 		ResponseEntity<String> resp = rt.exchange(buildURL, 
 				HttpMethod.GET, 
 				entity, 
@@ -122,7 +120,7 @@ public class OCRestClient {
 
 	}
 
-	public ResponseEntity<BuildStatusImage> getBuildsStatus(String buildConfigName) {
+	public ResponseEntity<BuildStatusImage> getBuildStatus(String buildConfigName) {
 
 
 		HttpEntity<String> entity = new HttpEntity<String>(this.getHeaders());
@@ -137,9 +135,9 @@ public class OCRestClient {
 				);
 
 
-		BuildStatusImage bsi = OSJsonParser.parseBuildList(resp.getBody());
+		BuildStatusImage bsi = OSJsonParser.parseBuildListForStatusAndImage(resp.getBody());
 
-		return new ResponseEntity<BuildStatusImage>(bsi,HttpStatus.OK);
+		return new ResponseEntity<BuildStatusImage>(bsi, HttpStatus.OK);
 
 	}
 
@@ -231,7 +229,8 @@ public class OCRestClient {
 			String hash, 
 			String uri, 
 			Optional<String> branch, 
-			Optional<String> contextDir) throws URISyntaxException {
+			Optional<String> contextDir,
+			Optional<String> dockerfilePath) throws URISyntaxException {
 
 		String buildURL = Utils.generateOSUrl("oapi", "buildconfigs");
 
@@ -241,7 +240,7 @@ public class OCRestClient {
 			return new ResponseEntity<String>(HttpStatus.UNPROCESSABLE_ENTITY);
 
 		RequestEntity<String> e = new RequestEntity<String>(
-				OSJsonParser.getPOSTBody("BuildConfig", hash, uri, branch, contextDir).toString(),
+				OSJsonParser.getPOSTBody("BuildConfig", hash, uri, branch, contextDir, dockerfilePath).toString(),
 				this.getHeaders(), 
 				HttpMethod.POST, 
 				new URI(buildURL) 
@@ -257,29 +256,7 @@ public class OCRestClient {
 		return resp;
 	}
 
-	/**
-	 * This method should be used, only if the build hasn't been triggered 
-	 * or the build pods have been deleted
-	 * @param params : Make sure the 'name' key exists
-	 * @return response
-	 * @throws URISyntaxException 
-	 */
-	public ResponseEntity<String> deleteBuildConfig(String hash) throws URISyntaxException{
-
-		String buildURL = Utils.generateOSUrl("oapi", "buildconfigs");
-
-		URI buildDeleteURL = new URI(buildURL + "/" + hash);
-
-		RequestEntity<String> e = new RequestEntity<String>(
-				this.getHeaders(), 
-				HttpMethod.DELETE, 
-				buildDeleteURL
-				);
-
-		ResponseEntity<String> resp = rt.exchange(e, String.class);
-
-		return resp;
-	}
+	
 
 	/** The build needs an image stream as well to output the final image
 	 * @param params (name)
@@ -327,7 +304,112 @@ public class OCRestClient {
 		return resp;
 
 	}
+	
+	/**
+	 * This method should be used, only if the build hasn't been triggered 
+	 * or all the build pods have been deleted
+	 * @param params : Make sure the 'name' key exists
+	 * @return response
+	 * @throws URISyntaxException 
+	 */
+	public ResponseEntity<String> deleteBuildConfig(String hash) throws URISyntaxException{
 
+		String buildConfigDeleteURL = Utils.generateOSUrl("apis", "buildconfigs", hash);
+
+		ResponseEntity<String> resp = null;
+		
+		try {
+		RequestEntity<String> e = new RequestEntity<String>(
+				this.getHeaders(), 
+				HttpMethod.DELETE, 
+				new URI(buildConfigDeleteURL)
+				);
+
+		resp = rt.exchange(e, String.class);
+		}
+		
+		catch(HttpClientErrorException ex) {	
+			return new ResponseEntity<String>(ex.getResponseBodyAsString(), ex.getStatusCode());
+		}
+		
+		return resp;
+	}
+
+
+	
+	/**
+	 * This method deletes the build with the provided build name
+	 * 
+	 * @param params : Make sure the 'name' key exists
+	 * @return response
+	 * @throws URISyntaxException 
+	 */
+	
+	public ResponseEntity<String> deleteBuild(String buildName) throws URISyntaxException{
+
+		String buildDeleteURL = Utils.generateOSUrl("apis", "builds", buildName);
+
+		ResponseEntity<String> resp = null;
+		try {
+			
+			RequestEntity<String> e = new RequestEntity<String>(
+					this.getHeaders(), 
+					HttpMethod.DELETE, 
+					new URI(buildDeleteURL)
+			);
+
+			resp = rt.exchange(e, String.class);
+
+		}
+		
+		catch(HttpClientErrorException ex) {
+			
+			resp = new ResponseEntity<String>(ex.getResponseBodyAsString(), ex.getStatusCode());
+			
+		}
+		return resp;
+	}
+	
+	
+	public ResponseEntity<String> deleteAllBuilds(String buildConfigName) throws URISyntaxException{
+
+		
+		String buildsJson = getBuilds(buildConfigName).getBody();
+		
+		List<String> buildNames = OSJsonParser.parseBuildListForNames(buildsJson);
+		
+		Iterator<String> buildNamesIterator = buildNames.iterator();
+		
+		
+		while (buildNamesIterator.hasNext()) {
+			
+			String build_name = buildNamesIterator.next();
+			
+			String buildDeleteURL = Utils.generateOSUrl("apis", "builds", build_name);
+
+			
+			try {
+				
+				RequestEntity<String> e = new RequestEntity<String>(
+						this.getHeaders(), 
+						HttpMethod.DELETE, 
+						new URI(buildDeleteURL)
+				);
+
+				rt.exchange(e, String.class);
+			}
+			
+			catch(HttpClientErrorException ex) {
+				return new ResponseEntity<String>(ex.getResponseBodyAsString(), ex.getStatusCode());
+			}
+			
+		}
+		
+		return new ResponseEntity<String>("All builds deleted", HttpStatus.OK);
+		
+	}
+	
+	
 
 
 }
