@@ -1,6 +1,7 @@
-package fi.csc.notebooks.osibuilder.osimage;
+package fi.csc.notebooks.osbuilder.controller;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -26,14 +27,20 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
 
 import com.google.gson.JsonObject;
 
 import fi.csc.notebooks.osbuilder.client.OCRestClient;
-import fi.csc.notebooks.osbuilder.misc.OSJsonParser;
+import fi.csc.notebooks.osbuilder.data.ApplicationUserRepository;
+import fi.csc.notebooks.osbuilder.data.UserDetailsServiceImpl;
 import fi.csc.notebooks.osbuilder.models.BuildStatusImage;
+import fi.csc.notebooks.osbuilder.utils.OSJsonParser;
 import fi.csc.notebooks.osbuilder.utils.Utils;
+
 
 @WebMvcTest
 class OsimageApplicationTests {
@@ -41,17 +48,28 @@ class OsimageApplicationTests {
 	@Test
 	void contextLoads() {
 	}
-
+	
 	@Autowired
 	MockMvc mvc;
 		
 	@MockBean
 	OCRestClient client;
 	
+	@MockBean
+	UserDetailsServiceImpl userDetailsServiceImpl;
+	
+	@MockBean
+	ApplicationUserRepository applicationUserRepository;
 	
 	@BeforeEach
 	void setUp() throws URISyntaxException, ValidationException {
 		
+		/*
+		mvc = MockMvcBuilders
+				.webAppContextSetup(context)
+				.apply(SecurityMockMvcConfigurers.springSecurity())
+				.build();
+		*/
 		String uri = "https://github.com/mockrepo";
 		Optional<String> branch = Optional.of("master");
 		Optional<String> contextDir = Optional.of("/home");
@@ -198,7 +216,7 @@ class OsimageApplicationTests {
 		String hash_all = Utils.generateHash(uri, branch, contextDir);
 		
 		mvc.perform(
-				post(String.format("%s%s","/api/build/start/",hash_all))
+				post(String.format("%s%s","/api/build/",hash_all)).with(user("test"))
 				)
 		.andExpect(status().isCreated());
 		
@@ -207,7 +225,7 @@ class OsimageApplicationTests {
 		String hash_build_does_not_exist = Utils.generateHash(uri_another, branch, contextDir);
 		
 		mvc.perform(
-				post(String.format("%s%s","/api/build/start/",hash_build_does_not_exist))
+				post(String.format("%s%s","/api/build/",hash_build_does_not_exist)).with(user("test"))
 				)
 		.andExpect(status().isNotAcceptable());
 		
@@ -224,7 +242,7 @@ class OsimageApplicationTests {
 		
 		
 		mvc.perform(
-				post("/api/buildconfig")
+				post("/api/buildconfig").with(user("test"))
 				.param("url", "https://github.com/mockrepo")
 				.param("branch", "master")
 				.param("contextDir", "/home")
@@ -233,7 +251,7 @@ class OsimageApplicationTests {
 		
 		
 		mvc.perform(
-				post("/api/buildconfig")
+				post("/api/buildconfig").with(user("test"))
 				.param("url", "")
 				.param("branch", "master")
 				.param("contextDir", "/home")
@@ -246,21 +264,15 @@ class OsimageApplicationTests {
 	@Test 
 	void getImageStream() throws Exception {
 		
-		/*
-		String hash_all = Utils.generateHash("https://github.com/mockrepo", 
-				Optional.of("master"), 
-				Optional.of("/home"));
-		*/
-		
 		mvc.perform(
-				get("/api/images")
+				get("/api/images").with(user("test"))
 				)
 		.andExpect(status().isOk())
 		.andExpect(jsonPath("$").isArray())
 		.andExpect(jsonPath("$", Matchers.hasSize(2)));
 		
 		mvc.perform(
-				get("/api/images")
+				get("/api/images").with(user("test"))
 				.param("url", "https://github.com/mockrepo")
 				.param("branch", "master")
 				.param("contextDir", "/home")
@@ -268,13 +280,6 @@ class OsimageApplicationTests {
 		.andExpect(status().isOk())
 		.andExpect(jsonPath("$").isArray())
 		.andExpect(jsonPath("$", Matchers.hasSize(2)));
-		
-		/*
-		mvc.perform(
-				get(String.format("%s%s", "/api/images/", hash_all))
-				)
-		.andExpect(status().isCreated());
-		*/
 		
 	}
 	
@@ -286,12 +291,12 @@ class OsimageApplicationTests {
 				Optional.of("/home"));
 		
 		mvc.perform(
-				get(String.format("%s%s", "/api/build/", hash_all))
+				get(String.format("%s%s", "/api/build/", hash_all)).with(user("test"))
 				)
 		.andExpect(status().isOk());
 		
 		mvc.perform(
-				get(String.format("%s%s", "/api/build/status/", hash_all))
+				get(String.format("%s%s", "/api/build/status/", hash_all)).with(user("test"))
 				)
 		.andExpect(status().isOk())
 		.andExpect(jsonPath("$", Matchers.aMapWithSize(3)))
@@ -308,7 +313,7 @@ class OsimageApplicationTests {
 		String hash_all = Utils.generateHash(uri, branch, contextDir);
 		
 		mvc.perform(
-				delete("/api/buildconfig/" + hash_all)
+				delete("/api/buildconfig/" + hash_all).with(user("test"))
 				)
 		.andExpect(status().isOk());
 		
@@ -325,12 +330,12 @@ class OsimageApplicationTests {
 		
 		
 		mvc.perform(
-				delete("/api/build/" + hash_all + "-1")
+				delete("/api/build/" + hash_all + "-1").with(user("test"))
 				)
 		.andExpect(status().isOk());
 		
 		mvc.perform(
-				delete("/api/builds/" + hash_all)
+				delete("/api/builds/" + hash_all).with(user("test"))
 				)
 		.andExpect(status().isOk());
 		

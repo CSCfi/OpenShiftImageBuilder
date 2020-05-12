@@ -8,17 +8,19 @@ import java.util.Properties;
 
 import org.apache.commons.codec.digest.DigestUtils;
 
+import fi.csc.notebooks.osbuilder.constants.SecurityConstants;
+
 
 public final class Utils {
 
-	public static final String PROPERTIES_FILEPATH = "/run/os.properties"; // Make sure this file is present or mounted as a configmap
+	 // Make sure this file is present or mounted as a configmap
 	
 	public static Properties readProperties() {
 		
 		Properties prop = null;
 		
 		try {
-			InputStream input = new FileInputStream(PROPERTIES_FILEPATH);
+			InputStream input = new FileInputStream(SecurityConstants.CLUSTER_PROPERTIES_PATH);
 
             prop = new Properties();
 
@@ -118,13 +120,16 @@ public String generateOAUTHUrl() {
 public static String generateHash(String url, Optional<String> branch, Optional<String> contextDir) {
 	
 	StringBuilder sb = new StringBuilder(url);
+	if (url.endsWith("/"))
+		sb.deleteCharAt(sb.length()-1);
 	
-	if (branch.isPresent())
+	
+	if (branch.isPresent() && !branch.get().isEmpty())
 		sb.append(branch.get());
 	else
 		sb.append("master"); // the default branch
 	
-	if (contextDir.isPresent())
+	if (contextDir.isPresent() && !contextDir.get().isEmpty())
 		sb.append(contextDir.get());
 	
 	return DigestUtils.sha1Hex(sb.toString());

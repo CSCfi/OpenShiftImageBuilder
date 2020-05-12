@@ -1,4 +1,4 @@
-package fi.csc.notebooks.osibuilder.osimage;
+package fi.csc.notebooks.osbuilder.controller;
 
 import java.net.URISyntaxException;
 import java.util.List;
@@ -7,9 +7,8 @@ import java.util.Optional;
 
 import javax.xml.bind.ValidationException;
 
-import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -21,14 +20,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.google.gson.JsonObject;
-
 import fi.csc.notebooks.osbuilder.client.OCRestClient;
 import fi.csc.notebooks.osbuilder.models.BuildStatusImage;
 import fi.csc.notebooks.osbuilder.utils.Utils;
 
-@SpringBootApplication(scanBasePackages = {
-"fi.csc.notebooks.osbuilder.client"})
 @RestController
 @CrossOrigin
 @RequestMapping(value="/api")
@@ -137,7 +132,7 @@ public class OSController {
 	
 	
 	
-	@PostMapping("/build/start/{buildConfigName}")
+	@PostMapping("/build/{buildConfigName}")
 	ResponseEntity<String> startBuild(@PathVariable String buildConfigName) throws URISyntaxException{
 		
 		
@@ -178,5 +173,14 @@ public class OSController {
 		
 		return resp;
 	}
+	
+	@DeleteMapping("/image/{buildConfigName}")
+	ResponseEntity<String> deleteImage(@PathVariable String buildConfigName) throws URISyntaxException{
+		
+		ResponseEntity<String> resp = client.deleteImage(buildConfigName);
+		
+		return resp;
+	}
+	
 		
 }

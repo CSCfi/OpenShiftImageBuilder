@@ -1,4 +1,4 @@
-package fi.csc.notebooks.osbuilder.misc;
+package fi.csc.notebooks.osbuilder.utils;
 
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonIOException;
@@ -19,7 +18,6 @@ import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSyntaxException;
 
 import fi.csc.notebooks.osbuilder.models.BuildStatusImage;
-import fi.csc.notebooks.osbuilder.utils.Utils;
 
 public final class OSJsonParser {
 	
@@ -143,10 +141,10 @@ public final class OSJsonParser {
 			
 			String strategy = "Source"; // Default build strategy
 			
-			if (dockerfilePath.isPresent())
+			if (dockerfilePath.isPresent() && !dockerfilePath.get().isEmpty())
 				strategy = "Docker";
 			
-			root = _readJson(kind, strategy);
+			root = _readJson(kind, strategy); // Read the json file corresponding to the strategy
 			root = _substituteVarsBuildConfig(root, hash, url, branch, contextDir, dockerfilePath);
 		}
 		return root;
@@ -257,13 +255,13 @@ public final class OSJsonParser {
 		
 		git.add("uri", jURI);
 		
-		if (branch.isPresent())
+		if (branch.isPresent() && !branch.get().isEmpty())
 			git.add("ref", new JsonPrimitive(branch.get()));
 		
-		if (contextDir.isPresent())
+		if (contextDir.isPresent() && !contextDir.get().isEmpty())
 			source.add("contextDir", new JsonPrimitive(contextDir.get()));
 		
-		if (dockerfilePath.isPresent()) { // If this option is present, it means BuildConfigDocker.json file has been read
+		if (dockerfilePath.isPresent() && !dockerfilePath.get().isEmpty()) { // If this option is present, it means BuildConfigDocker.json file has been read
 			
 			JsonObject strategy = root.get("spec").getAsJsonObject()
 					.get("strategy").getAsJsonObject();

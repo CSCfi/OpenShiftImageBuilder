@@ -13,29 +13,25 @@ import java.util.Properties;
 import javax.xml.bind.ValidationException;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.context.annotation.Configuration;
+
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
+
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.ResponseErrorHandler;
-import org.springframework.web.client.RestClientException;
+
 import org.springframework.web.client.RestTemplate;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.google.gson.JsonPrimitive;
-
-import fi.csc.notebooks.osbuilder.misc.OSJsonParser;
 import fi.csc.notebooks.osbuilder.models.BuildStatusImage;
+import fi.csc.notebooks.osbuilder.utils.OSJsonParser;
 import fi.csc.notebooks.osbuilder.utils.Utils;
 
-@Service
+@Configuration
 public class OCRestClient {
 
 
@@ -409,7 +405,30 @@ public class OCRestClient {
 		
 	}
 	
+	public ResponseEntity<String> deleteImage(String buildConfigName) throws URISyntaxException{
 	
+		String imageDeleteURL = Utils.generateOSUrl("apis", "imagestreams", buildConfigName);
+		
+		ResponseEntity<String> resp = null;
+	
+		try {
+			
+			RequestEntity<String> e = new RequestEntity<String>(
+					this.getHeaders(), 
+					HttpMethod.DELETE, 
+					new URI(imageDeleteURL)
+			);
+
+			resp = rt.exchange(e, String.class);
+		}
+		
+		catch(HttpClientErrorException ex) {
+			return new ResponseEntity<String>(ex.getResponseBodyAsString(), ex.getStatusCode());
+		}
+		
+		return resp;
+		
+	}
 
 
 }
