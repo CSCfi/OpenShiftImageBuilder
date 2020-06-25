@@ -1,5 +1,7 @@
 package fi.csc.notebooks.osbuilder.controller;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -23,10 +25,15 @@ public class UserController {
         this.bCryptPasswordEncoder = bCryptPasswordEncoder;
     }
 
-    @PostMapping("/sign-up")
-    public void signUp(@RequestBody ApplicationUser user) {
+    @PostMapping("/signup")
+    public ResponseEntity<String> signUp(@RequestBody ApplicationUser user) {
         user.setPassword(bCryptPasswordEncoder.encode(user.getPassword()));
+        if (applicationUserRepository.findByUsername(user.getUsername()) == null)
+        	return new ResponseEntity<String>("Username already exists", HttpStatus.CONFLICT);
+        
         applicationUserRepository.save(user);
+        return new ResponseEntity<String>(HttpStatus.OK);
+        
     }
     
     @GetMapping("/tokenvalidity")
