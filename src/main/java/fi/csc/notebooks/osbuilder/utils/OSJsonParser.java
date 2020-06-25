@@ -267,7 +267,7 @@ public final class OSJsonParser {
 					.get("strategy").getAsJsonObject();
 			
 			strategy.get("dockerStrategy").getAsJsonObject()
-			// Replace/Fzill the value of the docker file path, this can be dir (openshift will auto search for dockerfile), or can put the name of the file as well
+			// Replace/Fill the value of the docker file path, this can be dir (openshift will auto search for dockerfile), or can put the name of the file as well
 			.addProperty("dockerfilePath", dockerfilePath.get()); 
 		}
 		
