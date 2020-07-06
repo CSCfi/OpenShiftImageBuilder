@@ -28,7 +28,7 @@ public class UserController {
     @PostMapping("/signup")
     public ResponseEntity<String> signUp(@RequestBody ApplicationUser user) {
         user.setPassword(bCryptPasswordEncoder.encode(user.getPassword()));
-        if (applicationUserRepository.findByUsername(user.getUsername()) == null)
+        if (applicationUserRepository.findByUsername(user.getUsername()) != null)
         	return new ResponseEntity<String>("Username already exists", HttpStatus.CONFLICT);
         
         applicationUserRepository.save(user);
