@@ -46,6 +46,17 @@ objects:
           app: ${APPLICATION_NAME}
           deploymentconfig: ${APPLICATION_NAME}
       spec:
+        initContainers:
+          - image: docker-registry.rahti.csc.fi/openshiftimagebuilder-images/pem-converter:latest
+            name: pem-to-java-pkcs8-converter
+            volumeMounts:
+              - mountPath: /config/private_key.pem
+                name: private-key-pem
+                readOnly: true
+                subPath: private_key.pem
+              - mountPath: /config/keys
+                name: pkcs8-keys-store
+                readOnly: false
         containers:
           - image: ''
             imagePullPolicy: Always
@@ -54,11 +65,36 @@ objects:
               - containerPort: 8080
                 protocol: TCP
             resources: {}
+            volumeMounts:
+              - mountPath: /config/keys
+                name: pkcs8-keys-store
+                readOnly: true
+              - mountPath: /config/cluster.properties
+                name: cluster-properties
+                readOnly: true
+                subPath: cluster.properties
         dnsPolicy: ClusterFirst
         restartPolicy: Always
         schedulerName: default-scheduler
         securityContext: {}
         terminationGracePeriodSeconds: 30
+        volumes:
+        - name: cluster-properties
+          secret:
+            defaultMode: 420
+            items:
+              - key: cluster.properties
+                path: cluster.properties
+            secretName: ${APPLICATION_NAME}-cluster-properties
+        - name: private-key-pem
+          secret:
+            defaultMode: 420
+            items:
+              - key: ${PEM_FILENAME}
+                path: private_key.pem
+            secretName: ${APPLICATION_NAME}-privkey
+        - name: pkcs8-keys-store
+          emptyDir: {}
     test: false
     triggers:
       - type: ConfigChange
@@ -151,4 +187,9 @@ parameters:
 - description: Application name.
   displayName: Openshift Image Builder Application Name
   name: APPLICATION_NAME
-  required: true      
+  required: true
+- description: PEM SSH Key filename
+  displayName: Filename for the pem file containing the private key required for JWT authentication
+  name: PEM_FILENAME
+  required: true
+   
