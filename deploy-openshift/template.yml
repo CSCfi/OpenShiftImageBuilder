@@ -2,7 +2,8 @@ apiVersion: v1
 kind: Template
 labels:
   template: openshift-image-builder
-message: |-
+message: |- 
+  Access the backend via a web ui
 metadata:
   annotations:
     description: Deploys Openshift Image Builder Utility on Openshift
@@ -23,12 +24,12 @@ objects:
 - apiVersion: v1
   kind: DeploymentConfig
   metadata:
-    name: ${APPLICATION_NAME}-dc
+    name: ${APPLICATION_NAME}
   spec:
     replicas: 1
     selector:
       app: ${APPLICATION_NAME}
-      deploymentconfig: ${APPLICATION_NAME}-dc
+      deploymentconfig: ${APPLICATION_NAME}
     strategy:
       activeDeadlineSeconds: 21600
       resources: {}
@@ -39,7 +40,23 @@ objects:
         timeoutSeconds: 600
         updatePeriodSeconds: 1
       type: Rolling
+    template:
+      metadata:
+        labels:
+          app: ${APPLICATION_NAME}
+          deploymentconfig: ${APPLICATION_NAME}
       spec:
+        initContainers:
+          - image: docker-registry.rahti.csc.fi/openshiftimagebuilder-images/pem-converter:latest
+            name: pem-to-java-pkcs8-converter
+            volumeMounts:
+              - mountPath: /config/private_key.pem
+                name: private-key-pem
+                readOnly: true
+                subPath: private_key.pem
+              - mountPath: /config/keys
+                name: pkcs8-keys-store
+                readOnly: false
         containers:
           - image: ''
             imagePullPolicy: Always
@@ -48,11 +65,36 @@ objects:
               - containerPort: 8080
                 protocol: TCP
             resources: {}
+            volumeMounts:
+              - mountPath: /config/keys
+                name: pkcs8-keys-store
+                readOnly: true
+              - mountPath: /config/cluster.properties
+                name: cluster-properties
+                readOnly: true
+                subPath: cluster.properties
         dnsPolicy: ClusterFirst
         restartPolicy: Always
         schedulerName: default-scheduler
         securityContext: {}
         terminationGracePeriodSeconds: 30
+        volumes:
+        - name: cluster-properties
+          secret:
+            defaultMode: 420
+            items:
+              - key: cluster.properties
+                path: cluster.properties
+            secretName: ${APPLICATION_NAME}-cluster-properties
+        - name: private-key-pem
+          secret:
+            defaultMode: 420
+            items:
+              - key: ${PEM_FILENAME}
+                path: private_key.pem
+            secretName: ${APPLICATION_NAME}-privkey
+        - name: pkcs8-keys-store
+          emptyDir: {}
     test: false
     triggers:
       - type: ConfigChange
@@ -70,7 +112,7 @@ objects:
   metadata:
     labels:
       app: ${APPLICATION_NAME}
-    name: ${APPLICATION_NAME}-svc
+    name: ${APPLICATION_NAME}
   spec:
     ports:
       - name: 8080-tcp
@@ -78,7 +120,7 @@ objects:
         protocol: TCP
         targetPort: 8080
     selector:
-      deploymentconfig: ${APPLICATION_NAME}-dc
+      deploymentconfig: ${APPLICATION_NAME}
     sessionAffinity: None
     type: ClusterIP
   status:
@@ -89,7 +131,7 @@ objects:
   metadata:
     labels:
       app: ${APPLICATION_NAME}
-    name: ${APPLICATION_NAME}-route
+    name: ${APPLICATION_NAME}
   spec:
     port:
       targetPort: 8080-tcp
@@ -97,7 +139,7 @@ objects:
       termination: edge
     to:
       kind: Service
-      name: ${APPLICATION_NAME}-svc
+      name: ${APPLICATION_NAME}
       weight: 100
     wildcardPolicy: None
    
@@ -112,7 +154,7 @@ objects:
     output:
       to:
         kind: ImageStreamTag
-        name: ${APPLICATION_NAME}-latest
+        name: ${APPLICATION_NAME}:latest
     postCommit: {}
     resources: {}
     runPolicy: Serial
@@ -122,10 +164,11 @@ objects:
         uri: 'https://github.com/CSCfi/OpenshiftImageBuilder'
       type: Git
     strategy:
-      customStrategy:
+      sourceStrategy:
         from:
           kind: "DockerImage"
           name: "fabric8/s2i-java"
+      type: "Source"
     triggers:
       - type: ImageChange
       - type: ConfigChange
@@ -140,5 +183,13 @@ objects:
     lookupPolicy:
       local: false
 
-
-        
+parameters:
+- description: Application name.
+  displayName: Openshift Image Builder Application Name
+  name: APPLICATION_NAME
+  required: true
+- description: PEM SSH Key filename
+  displayName: Filename for the pem file containing the private key required for JWT authentication
+  name: PEM_FILENAME
+  required: true
+   

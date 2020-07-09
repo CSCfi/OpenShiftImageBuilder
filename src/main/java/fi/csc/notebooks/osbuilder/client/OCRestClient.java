@@ -60,7 +60,7 @@ public class OCRestClient {
 
 		String buildURL = Utils.generateOSUrl("oapi", "buildconfigs");
 
-		System.out.println(buildURL);
+		// System.out.println(buildURL);
 
 
 		ResponseEntity<String> resp = rt.exchange(buildURL, 
