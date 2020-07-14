@@ -11,7 +11,7 @@ metadata:
       WARNING- This deployment setup is still in the experimental stage.
     iconClass: icon-spring
     openshift.io/display-name: OpenShift Image Builder
-    openshift.io/documentation-url: https://github.com/CSCfi/OpenshiftImageBuilder
+    openshift.io/documentation-url: https://github.com/CSCfi/OpenShiftImageBuilder
     openshift.io/support-url: https://www.csc.fi/contact-info
     openshift.io/long-description: 
     openshift.io/provider-display-name: CSC
@@ -161,7 +161,7 @@ objects:
     source:
       git:
         ref: master
-        uri: 'https://github.com/CSCfi/OpenshiftImageBuilder'
+        uri: 'https://github.com/CSCfi/OpenShiftImageBuilder'
       type: Git
     strategy:
       sourceStrategy:
