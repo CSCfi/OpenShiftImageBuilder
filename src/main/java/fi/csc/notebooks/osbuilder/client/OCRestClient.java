@@ -39,14 +39,24 @@ public class OCRestClient {
 
 	@Autowired
 	public OCRestClient(){
-		rt = new RestTemplate();	
+		
+		rt = new RestTemplate();
+		
+		try {
+			
+			Utils.readEnvsAndTokenFile();
+		}
+		catch (Exception e) {
+		
+			System.out.println("Falling back to reading the custom properties file");
+			Utils.readProperties();
+		}
 	}
 
 	private MultiValueMap<String, String> getHeaders() {
 
 		MultiValueMap<String, String> headers = new LinkedMultiValueMap<String, String>();
-		Properties props = Utils.readProperties();
-		headers.add("Authorization", "Bearer " + props.getProperty("TOKEN"));
+		headers.add("Authorization", "Bearer " + Utils.TOKEN);
 		headers.add("Content-Type", "application/json");
 
 		return headers;
@@ -263,9 +273,6 @@ public class OCRestClient {
 
 
 		String imageStreamURL = Utils.generateOSUrl("apis", "imagestreams");
-
-
-		System.out.println(imageStreamURL);
 
 
 		if(hash.isEmpty())
