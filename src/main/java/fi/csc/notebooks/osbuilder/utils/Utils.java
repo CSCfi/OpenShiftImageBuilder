@@ -3,6 +3,8 @@ package fi.csc.notebooks.osbuilder.utils;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Optional;
 import java.util.Properties;
 
@@ -15,15 +17,30 @@ public final class Utils {
 
 	 // Make sure this file is present or mounted as a configmap
 	
-	public static Properties readProperties() {
+	public static String NAMESPACE;
+	public static String OS_ENDPOINT;
+	public static String TOKEN;
+	
+	public static void readEnvsAndTokenFile() throws IOException, RuntimeException {
+		
+		OS_ENDPOINT = System.getenv("CLUSTER_ENDPOINT");
+		
+		if (OS_ENDPOINT == null)
+			throw new RuntimeException("Environment variable for OpenShift cluster endpoint missing");
+		
+		NAMESPACE = new String(Files.readAllBytes(Paths.get(SecurityConstants.NAMESPACE_FILEPATH)));
+		TOKEN = new String(Files.readAllBytes(Paths.get(SecurityConstants.TOKEN_FILEPATH)));
+		
+	}
+	
+	public static void readProperties() {
 		
 		Properties prop = null;
 		
 		try {
+			
 			InputStream input = new FileInputStream(SecurityConstants.CLUSTER_PROPERTIES_PATH);
-
             prop = new Properties();
-
             prop.load(input);
             
 		}
@@ -32,7 +49,11 @@ public final class Utils {
 			e.printStackTrace();
 			
 		}
-		return prop;
+		
+		NAMESPACE = prop.getProperty("NAMESPACE");
+		OS_ENDPOINT = prop.getProperty("OS_ENDPOINT");
+		TOKEN = prop.getProperty("TOKEN");
+	
 	}
 	
 	
@@ -42,7 +63,6 @@ public final class Utils {
 	 */
 	public static String generateOSUrl(String apiType, String resource) {
 		
-		Properties props = Utils.readProperties();
 		
 		if (apiType.equals("apis"))
 		{
@@ -55,10 +75,10 @@ public final class Utils {
 		
 		
 		return String.format("%s%s%s%s%s%s", 
-				props.getProperty("OS_ENDPOINT"),
+				OS_ENDPOINT,
 				apiType,
 				"/v1/namespaces/",
-				props.getProperty("NAMESPACE"),
+				NAMESPACE,
 				"/",
 				resource
 				);
@@ -75,8 +95,6 @@ public final class Utils {
  */
 public static  String generateOSUrl(String apiType, String resource, String name) {
 		
-		Properties props = Utils.readProperties();
-		
 		if (apiType.equals("apis"))
 		{
 			
@@ -87,10 +105,10 @@ public static  String generateOSUrl(String apiType, String resource, String name
 		}
 		
 		return String.format("%s%s%s%s%s%s%s%s", 
-				props.getProperty("OS_ENDPOINT"),
+				OS_ENDPOINT,
 				apiType,
 				"/v1/namespaces/",
-				props.getProperty("NAMESPACE"),
+				NAMESPACE,
 				"/",
 				resource,
 				"/",
@@ -101,10 +119,8 @@ public static  String generateOSUrl(String apiType, String resource, String name
 
 public String generateOAUTHUrl() {
 	
-	Properties props = Utils.readProperties();
-	
 	return String.format("%s%s", 
-			props.getProperty("OS_ENDPOINT"),
+			OS_ENDPOINT,
 			"oauth/authorize"
 			);
 	}

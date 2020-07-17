@@ -65,6 +65,9 @@ objects:
               - containerPort: 8080
                 protocol: TCP
             resources: {}
+            env:
+              - name: FLOWER_PORT
+                value: '5555'
             volumeMounts:
               - mountPath: /config/keys
                 name: pkcs8-keys-store
@@ -182,6 +185,24 @@ objects:
   spec:
     lookupPolicy:
       local: false
+
+- apiVersion: v1
+  kind: ServiceAccount
+  metadata:
+    name: osibuilder
+
+- apiVersion: rbac.authorization.k8s.io/v1
+  kind: RoleBinding
+  metadata:
+    name: osbuilder-edit-binding
+  roleRef:
+    apiGroup: rbac.authorization.k8s.io
+    kind: ClusterRole
+    name: edit
+  subjects:
+    - kind: ServiceAccount
+      name: osibuilder
+
 
 parameters:
 - description: Application name.
