@@ -1,64 +1,57 @@
 package fi.csc.notebooks.osbuilder.utils;
 
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Optional;
-import java.util.Properties;
 
 import org.apache.commons.codec.digest.DigestUtils;
-
 import fi.csc.notebooks.osbuilder.constants.SecurityConstants;
 
 
 public final class Utils {
 
-	 // Make sure this file is present or mounted as a configmap
+	 // Make sure this file is present or mounted as a ConfigMap
 	
 	public static String NAMESPACE;
 	public static String OS_ENDPOINT;
 	public static String TOKEN;
 	
-	public static void readEnvsAndTokenFile() throws IOException, RuntimeException {
+	
+	public static void readDefaultConfig() throws IOException, RuntimeException {
 		
-		OS_ENDPOINT = System.getenv("CLUSTER_ENDPOINT");
+		OS_ENDPOINT = System.getenv("OPENSHIFT_CLUSTER_ENDPOINT");
 		
 		if (OS_ENDPOINT == null)
 			throw new RuntimeException("Environment variable for OpenShift cluster endpoint missing");
 		
-		NAMESPACE = new String(Files.readAllBytes(Paths.get(SecurityConstants.NAMESPACE_FILEPATH)));
-		TOKEN = new String(Files.readAllBytes(Paths.get(SecurityConstants.TOKEN_FILEPATH)));
+			NAMESPACE = new String(Files.readAllBytes(Paths.get(SecurityConstants.NAMESPACE_FILEPATH)));
+			TOKEN = new String(Files.readAllBytes(Paths.get(SecurityConstants.TOKEN_FILEPATH)));
+		
 		
 	}
 	
-	public static void readProperties() {
+	public static void readCustomConfig() throws RuntimeException {
 		
-		Properties prop = null;
+		NAMESPACE = System.getenv("OPENSHIFT_CUSTOM_PROJECT");
+		if (NAMESPACE == null)
+			throw new RuntimeException("Environment variable for Namespace missing");
 		
-		try {
-			
-			InputStream input = new FileInputStream(SecurityConstants.CLUSTER_PROPERTIES_PATH);
-            prop = new Properties();
-            prop.load(input);
-            
-		}
-		catch(IOException e) {
-			
-			e.printStackTrace();
-			
-		}
+		TOKEN = System.getenv("OPENSHIFT_SERVICE_ACCOUNT_TOKEN");
+		if (TOKEN == null)
+			throw new RuntimeException("Environment variable for Token missing");
 		
-		NAMESPACE = prop.getProperty("NAMESPACE");
-		OS_ENDPOINT = prop.getProperty("OS_ENDPOINT");
-		TOKEN = prop.getProperty("TOKEN");
+		OS_ENDPOINT = System.getenv("OPENSHIFT_CLUSTER_ENDPOINT");
+		if (OS_ENDPOINT == null)
+			throw new RuntimeException("Environment variable for cluster endpoint missing");
+	
+		
 	
 	}
 	
 	
 	/**
-	 * @param apiType which can be opi for openshift and apis for k8s
+	 * @param apiType which can be opi for OpenShift and apis for k8s
 	 * @return
 	 */
 	public static String generateOSUrl(String apiType, String resource) {
