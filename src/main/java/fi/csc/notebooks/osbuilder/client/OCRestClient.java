@@ -1,5 +1,6 @@
 package fi.csc.notebooks.osbuilder.client;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
@@ -43,13 +44,20 @@ public class OCRestClient {
 		rt = new RestTemplate();
 		
 		try {
+			Utils.readCustomConfig();
 			
-			Utils.readEnvsAndTokenFile();
 		}
 		catch (Exception e) {
-		
-			System.out.println("Falling back to reading the custom properties file");
-			Utils.readProperties();
+			System.out.println("WARN: " + e.getMessage());
+			System.out.println("WARN: Custom configuration not found, using the default namespace and service account token");
+			
+			try {
+				Utils.readDefaultConfig();
+			} catch (IOException | RuntimeException e1) {
+				e1.printStackTrace();
+				System.out.println("ERROR: Required parameters for running the application not found, exiting...");
+				System.exit(404); // Terminate the application, if the required configuration is not found.
+			}
 		}
 	}
 

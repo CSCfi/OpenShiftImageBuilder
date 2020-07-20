@@ -66,29 +66,22 @@ objects:
                 protocol: TCP
             resources: {}
             env:
-              - name: FLOWER_PORT
-                value: '5555'
+              - name: OPENSHIFT_CLUSTER_ENDPOINT
+                value: ${OPENSHIFT_CLUSTER_ENDPOINT}
+              - name: OPENSHIFT_CUSTOM_PROJECT
+                value: ${OPENSHIFT_CUSTOM_PROJECT}
+              - name: OPENSHIFT_SERVICE_ACCOUNT_TOKEN
+                value: ${OPENSHIFT_SERVICE_ACCOUNT_TOKEN}
             volumeMounts:
               - mountPath: /config/keys
                 name: pkcs8-keys-store
                 readOnly: true
-              - mountPath: /config/cluster.properties
-                name: cluster-properties
-                readOnly: true
-                subPath: cluster.properties
         dnsPolicy: ClusterFirst
         restartPolicy: Always
         schedulerName: default-scheduler
         securityContext: {}
         terminationGracePeriodSeconds: 30
         volumes:
-        - name: cluster-properties
-          secret:
-            defaultMode: 420
-            items:
-              - key: cluster.properties
-                path: cluster.properties
-            secretName: ${APPLICATION_NAME}-cluster-properties
         - name: private-key-pem
           secret:
             defaultMode: 420
@@ -163,7 +156,7 @@ objects:
     runPolicy: Serial
     source:
       git:
-        ref: master
+        ref: add_service_account
         uri: 'https://github.com/CSCfi/OpenShiftImageBuilder'
       type: Git
     strategy:
@@ -213,4 +206,15 @@ parameters:
   displayName: Filename for the pem file containing the private key required for JWT authentication
   name: PEM_FILENAME
   required: true
+- description: Openhsift Cluster Endpoint
+  displayName: Openshift Cluster Endpoint for accessing the REST APIs
+  name: OPENSHIFT_CLUSTER_ENDPOINT
+  value: https://rahti.csc.fi:8443/
+  required: true
+- description: Openhsift Project for Images (Optional)
+  displayName: Openshift Custom Project for building Images
+  name: OPENSHIFT_CUSTOM_PROJECT
+- description: Openhsift Service Account Token (Optional)
+  displayName: Openshift Service Account Token for custom project where images are built
+  name: OPENSHIFT_SERVICE_ACCOUNT_TOKEN
    
