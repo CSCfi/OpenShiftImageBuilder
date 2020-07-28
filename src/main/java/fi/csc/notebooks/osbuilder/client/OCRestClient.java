@@ -9,7 +9,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Properties;
 
 import javax.xml.bind.ValidationException;
 
@@ -64,6 +63,9 @@ public class OCRestClient {
 	private MultiValueMap<String, String> getHeaders() {
 
 		MultiValueMap<String, String> headers = new LinkedMultiValueMap<String, String>();
+		
+		//System.out.println("DEBUG: " + "Token: " + Utils.TOKEN);
+		
 		headers.add("Authorization", "Bearer " + Utils.TOKEN);
 		headers.add("Content-Type", "application/json");
 
@@ -78,7 +80,7 @@ public class OCRestClient {
 
 		String buildURL = Utils.generateOSUrl("oapi", "buildconfigs");
 
-		// System.out.println(buildURL);
+		// System.out.println("DEBUG: " + buildURL);
 
 
 		ResponseEntity<String> resp = rt.exchange(buildURL, 
@@ -100,9 +102,7 @@ public class OCRestClient {
 
 		String buildURL = Utils.generateOSUrl("apis", "buildconfigs", name);
 
-		System.out.println(buildURL);
-
-
+		//System.out.println("DEBUG: " + buildURL);
 
 		ResponseEntity<String> resp = rt.exchange(buildURL, 
 				HttpMethod.GET, 
@@ -113,7 +113,7 @@ public class OCRestClient {
 
 	}
 
-	//  https://rahti.csc.fi:8443/apis/build.openshift.io/v1/namespaces/pebbles/builds?labelSelector=buildconfig
+	//  https://rahti.csc.fi:8443/apis/build.openshift.io/v1/namespaces/your-namespace/builds?labelSelector=buildconfig
 	public ResponseEntity<String> getBuilds(String buildId) {
 
 
@@ -140,6 +140,8 @@ public class OCRestClient {
 		HttpEntity<String> entity = new HttpEntity<String>(this.getHeaders());
 
 		String buildURL = Utils.generateOSUrl("apis", "builds") + "?labelSelector={label}";
+
+		//System.out.println("DEBUG: " + buildURL);
 
 		ResponseEntity<String> resp = rt.exchange(buildURL, 
 				HttpMethod.GET, 
@@ -178,6 +180,8 @@ public class OCRestClient {
 
 		String imageStreamURL = Utils.generateOSUrl("apis", "imagestreams");
 
+		//System.out.println("DEBUG: " + imageStreamURL);
+		
 		ResponseEntity<List<Map<String,String>>> resp = null;
 
 		try {
@@ -214,6 +218,8 @@ public class OCRestClient {
 
 		String imageStreamURL = Utils.generateOSUrl("apis", "imagestreams", imageName);
 
+		//System.out.println("DEBUG: " + imageStreamURL);
+		
 		ResponseEntity<Map<String,String>> res = null;
 
 		try {

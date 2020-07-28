@@ -32,6 +32,7 @@ public class UserController {
         	return new ResponseEntity<String>("Username already exists", HttpStatus.CONFLICT);
         
         applicationUserRepository.save(user);
+        System.out.println("Created user with username: " + user.getUsername());
         return new ResponseEntity<String>(HttpStatus.OK);
         
     }

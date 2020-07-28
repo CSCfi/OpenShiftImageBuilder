@@ -110,10 +110,16 @@ public class OSController {
 		String hash = Utils.generateHash(url, branch, contextDir);
 		
 		ResponseEntity<String> build_resp = client.postBuildConfig(hash, url, branch, contextDir, dockerfilePath);
+		
+		System.out.println("DEBUG: " + build_resp.getStatusCodeValue() + " -- " + build_resp.getBody());
+		
 		if (!build_resp.getStatusCode().is2xxSuccessful()) // Error
 			return build_resp;
 		
 		ResponseEntity<String> image_resp = client.postImageStreamConfig(hash);
+		
+		System.out.println("DEBUG: " + image_resp.getStatusCodeValue() + " -- " + image_resp.getBody());
+		
 		if (!image_resp.getStatusCode().is2xxSuccessful())  // Error
 		{
 			try {

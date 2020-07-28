@@ -64,6 +64,7 @@ public class JWTAuthorizationFilter extends BasicAuthenticationFilter {
             // parse the token.
         	
         	token  = token.replace(SecurityConstants.TOKEN_PREFIX, "");
+        	//System.out.println("DEBUG: " + token);
         		
         	byte[] keyBytes = null;
 			try {
@@ -105,6 +106,7 @@ public class JWTAuthorizationFilter extends BasicAuthenticationFilter {
         		return null;
         	}
         	JsonObject tokenBody = JsonParser.parseString(parsedTokenJsonBody).getAsJsonObject();
+        	//System.out.println("DEBUG: " + tokenBody);
         	
         	String user = tokenBody.get("sub").getAsString();
         	
