@@ -34,15 +34,15 @@ public final class Utils {
 	public static void readCustomConfig() throws RuntimeException {
 		
 		NAMESPACE = System.getenv("OPENSHIFT_CUSTOM_PROJECT");
-		if (NAMESPACE == null)
+		if (NAMESPACE == null || NAMESPACE.isEmpty())
 			throw new RuntimeException("Environment variable for Namespace missing");
 		
 		TOKEN = System.getenv("OPENSHIFT_SERVICE_ACCOUNT_TOKEN");
-		if (TOKEN == null)
+		if (TOKEN == null || TOKEN.isEmpty())
 			throw new RuntimeException("Environment variable for Token missing");
 		
 		OS_ENDPOINT = System.getenv("OPENSHIFT_CLUSTER_ENDPOINT");
-		if (OS_ENDPOINT == null)
+		if (OS_ENDPOINT == null || OS_ENDPOINT.isEmpty())
 			throw new RuntimeException("Environment variable for cluster endpoint missing");
 	
 		
