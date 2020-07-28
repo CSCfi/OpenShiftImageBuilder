@@ -46,6 +46,7 @@ objects:
           app: ${APPLICATION_NAME}
           deploymentconfig: ${APPLICATION_NAME}
       spec:
+        serviceAccount: ${APPLICATION_NAME}-osibuilder
         initContainers:
           - image: docker-registry.rahti.csc.fi/openshiftimagebuilder-images/pem-converter:latest
             name: pem-to-java-pkcs8-converter
@@ -182,19 +183,19 @@ objects:
 - apiVersion: v1
   kind: ServiceAccount
   metadata:
-    name: osibuilder
+    name: ${APPLICATION_NAME}-osibuilder
 
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: RoleBinding
   metadata:
-    name: osbuilder-edit-binding
+    name: ${APPLICATION_NAME}-osibuilder-edit-binding
   roleRef:
     apiGroup: rbac.authorization.k8s.io
     kind: ClusterRole
     name: edit
   subjects:
     - kind: ServiceAccount
-      name: osibuilder
+      name: ${APPLICATION_NAME}-osibuilder
 
 
 parameters:
