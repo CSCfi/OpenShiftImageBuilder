@@ -1,7 +1,11 @@
 package fi.csc.notebooks.osbuilder.utils;
 
-import java.io.FileNotFoundException;
+import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -168,17 +172,21 @@ public final class OSJsonParser {
 	
 	/** All helper functions go here **/
 	
+	
 	private static JsonObject _readJsonFile(String filename) {
 		
 	
+		
 		JsonObject root = null;
 		
-		String filepath = "templates/" + filename;
-		
+			
 		try {
-			root = JsonParser.parseReader(new FileReader(filepath)).getAsJsonObject();
-		} catch (JsonIOException | JsonSyntaxException | FileNotFoundException e) {
-			// TODO Auto-generated catch block
+			/* NOTE: HAVE to read it as STREAM , not FILE
+			 * Filepaths are not recognized when the app is packaged as a jar
+			 */
+			InputStream in = OSJsonParser.class.getClassLoader().getResourceAsStream(filename); 
+			root = JsonParser.parseReader(new InputStreamReader(in)).getAsJsonObject();
+		} catch (JsonIOException | JsonSyntaxException e) {
 			e.printStackTrace();
 			
 		}
