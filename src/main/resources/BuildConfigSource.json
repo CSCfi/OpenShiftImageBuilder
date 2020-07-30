@@ -21,8 +21,8 @@
 	"strategy": {
 		"sourceStrategy": {
 			"from": {
-				"kind": "ImageStreamTag",
-				"name": "s2i-minimal-notebook-py35:latest"
+				"kind": "DockerImage",
+				"name": "quay.io/jupyteronopenshift/s2i-minimal-notebook-py35"
 			},
           "type": "Source"
 		}
