@@ -70,7 +70,6 @@ public class JWTAuthorizationFilter extends BasicAuthenticationFilter {
 			try {
 				keyBytes = Files.readAllBytes(Paths.get(SecurityConstants.PUBLIC_KEY_DER_PATH));
 			} catch (IOException e1) {
-				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
 
@@ -102,7 +101,7 @@ public class JWTAuthorizationFilter extends BasicAuthenticationFilter {
         			.getBody().toString();
         	}
         	catch(ExpiredJwtException | MalformedJwtException | SignatureException | IllegalArgumentException e) {
-        		e.printStackTrace();
+        		System.out.println(e.getMessage());
         		return null;
         	}
         	JsonObject tokenBody = JsonParser.parseString(parsedTokenJsonBody).getAsJsonObject();
