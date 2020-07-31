@@ -24,6 +24,8 @@ objects:
 - apiVersion: v1
   kind: DeploymentConfig
   metadata:
+    labels:
+      app: ${APPLICATION_NAME}
     name: ${APPLICATION_NAME}
   spec:
     replicas: 1
@@ -77,6 +79,8 @@ objects:
               - mountPath: /config/keys
                 name: pkcs8-keys-store
                 readOnly: true
+              - mountPath: /data/osimagebuilder
+                name: db-pvc
         dnsPolicy: ClusterFirst
         restartPolicy: Always
         schedulerName: default-scheduler
@@ -92,6 +96,10 @@ objects:
             secretName: ${APPLICATION_NAME}-privkey
         - name: pkcs8-keys-store
           emptyDir: {}
+        - name: db-pvc
+          persistentVolumeClaim:
+            claimName: ${APPLICATION_NAME}-db
+       
     test: false
     triggers:
       - type: ConfigChange
@@ -157,7 +165,7 @@ objects:
     runPolicy: Serial
     source:
       git:
-        ref: add_service_account
+        ref: master
         uri: 'https://github.com/CSCfi/OpenShiftImageBuilder'
       type: Git
     strategy:
@@ -175,6 +183,7 @@ objects:
   metadata:
     labels:
       build: ${APPLICATION_NAME}
+      app: ${APPLICATION_NAME}
     name: ${APPLICATION_NAME}
   spec:
     lookupPolicy:
@@ -184,11 +193,15 @@ objects:
   kind: ServiceAccount
   metadata:
     name: ${APPLICATION_NAME}-osibuilder
+    labels:
+      app: ${APPLICATION_NAME}
 
 - apiVersion: rbac.authorization.k8s.io/v1
   kind: RoleBinding
   metadata:
     name: ${APPLICATION_NAME}-osibuilder-edit-binding
+    labels:
+      app: ${APPLICATION_NAME}
   roleRef:
     apiGroup: rbac.authorization.k8s.io
     kind: ClusterRole
@@ -196,6 +209,17 @@ objects:
   subjects:
     - kind: ServiceAccount
       name: ${APPLICATION_NAME}-osibuilder
+      
+- apiVersion: "v1"
+  kind: "PersistentVolumeClaim"
+  metadata:
+    name: ${APPLICATION_NAME}-db
+  spec:
+    accessModes:
+      - "ReadWriteOnce"
+    resources:
+      requests:
+        storage: 1Gi
 
 
 parameters:
