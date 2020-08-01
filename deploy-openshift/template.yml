@@ -75,11 +75,19 @@ objects:
                 value: ${OPENSHIFT_CUSTOM_PROJECT}
               - name: OPENSHIFT_SERVICE_ACCOUNT_TOKEN
                 value: ${OPENSHIFT_SERVICE_ACCOUNT_TOKEN}
+              - name: SPRING_CONFIG_NAME
+                value: application
+              - name: SPRING_CONFIG_LOCATION
+                value: file:${APPLICATION_PROPERTIES_MOUNT_DIR}/
             volumeMounts:
               - mountPath: /config/keys
                 name: pkcs8-keys-store
                 readOnly: true
-              - mountPath: /data/osimagebuilder
+              - mountPath: ${APPLICATION_PROPERTIES_MOUNT_DIR}/application.properties
+                name: application-properties-vol
+                subPath: application.properties
+                readOnly: true
+              - mountPath: ${DB_FILE_MOUNT_DIR}
                 name: db-pvc
         dnsPolicy: ClusterFirst
         restartPolicy: Always
@@ -96,6 +104,12 @@ objects:
             secretName: ${APPLICATION_NAME}-privkey
         - name: pkcs8-keys-store
           emptyDir: {}
+        - name: application-properties-vol
+          configMap:
+            name: ${APPLICATION_NAME}-application-properties
+            items:
+            - key: application.properties
+              path: application.properties
         - name: db-pvc
           persistentVolumeClaim:
             claimName: ${APPLICATION_NAME}-db
@@ -111,6 +125,22 @@ objects:
             kind: ImageStreamTag
             name: ${APPLICATION_NAME}:latest
         type: ImageChange
+
+
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: ${APPLICATION_NAME}-application-properties
+  data:
+    application.properties: |
+      spring.datasource.url=jdbc:h2:file:${DB_FILE_MOUNT_DIR}/db
+      spring.datasource.username=${DB_USER}
+      spring.datasource.password=${DB_PASSWORD}
+      spring.datasource.driverClassName=org.h2.Driver
+      spring.jpa.database-platform=org.hibernate.dialect.H2Dialect
+      spring.h2.console.enabled=true
+      spring.h2.console.path=/h2-console
+      spring.h2.console.settings.web-allow-others=true
 
 - apiVersion: v1
   kind: Service
@@ -145,6 +175,24 @@ objects:
     to:
       kind: Service
       name: ${APPLICATION_NAME}
+      weight: 100
+    wildcardPolicy: None
+    
+- apiVersion: route.openshift.io/v1
+  kind: Route
+  metadata:
+    labels:
+      app: ${APPLICATION_NAME}
+    name: ${APPLICATION_NAME}-h2-db
+  spec:
+    path: /h2-console
+    port:
+      targetPort: 8080-tcp
+    tls:
+      termination: edge
+    to:
+      kind: Service
+      name:  ${APPLICATION_NAME}
       weight: 100
     wildcardPolicy: None
    
@@ -236,10 +284,26 @@ parameters:
   name: OPENSHIFT_CLUSTER_ENDPOINT
   value: https://rahti.csc.fi:8443/
   required: true
+- description: Username for accessing the App Database
+  from: '[A-Z0-9]{12}'
+  generate: expression
+  name: DB_USER
+- description: Password for accessing the App Database
+  from: '[A-Z0-9]{12}'
+  generate: expression
+  name: DB_PASSWORD
 - description: Openhsift Project for Images (Optional)
   displayName: Openshift Custom Project for building Images
   name: OPENSHIFT_CUSTOM_PROJECT
 - description: Openhsift Service Account Token (Optional)
   displayName: Openshift Service Account Token for custom project where images are built
   name: OPENSHIFT_SERVICE_ACCOUNT_TOKEN
+- description: Mount directory for the Spring Application Properties file
+  displayName: Application Properties Mount Directory
+  name: APPLICATION_PROPERTIES_MOUNT_DIR
+  value: "/config"
+- description: Mount directory for the DB file
+  displayName: DB File Mount Directory
+  name: DB_FILE_MOUNT_DIR
+  value: "/data/osimagebuilder"
    
