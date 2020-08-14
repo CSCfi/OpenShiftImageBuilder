@@ -12,6 +12,8 @@ import java.util.Optional;
 
 import javax.xml.bind.ValidationException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 
@@ -27,6 +29,7 @@ import org.springframework.web.client.HttpClientErrorException;
 
 import org.springframework.web.client.RestTemplate;
 
+import ch.qos.logback.classic.Level;
 import fi.csc.notebooks.osbuilder.models.BuildStatusImage;
 import fi.csc.notebooks.osbuilder.utils.OSJsonParser;
 import fi.csc.notebooks.osbuilder.utils.Utils;
@@ -34,12 +37,18 @@ import fi.csc.notebooks.osbuilder.utils.Utils;
 @Configuration
 public class OCRestClient {
 
+	private static final Logger logger = LoggerFactory.getLogger(OCRestClient.class);
+	ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(logger.getName());
+	
+	
 
 	private RestTemplate rt;
 
 	@Autowired
 	public OCRestClient(){
 		
+		if(Utils.getDebugState())
+    		root.setLevel(Level.DEBUG);
 		rt = new RestTemplate();
 		
 		try {
@@ -47,14 +56,14 @@ public class OCRestClient {
 			
 		}
 		catch (Exception e) {
-			System.out.println("WARN: " + e.getMessage());
-			System.out.println("WARN: Custom configuration not found, using the default namespace and service account token");
+			logger.warn(e.getMessage());
+			logger.warn("Custom configuration not found, using the default namespace and service account token");
 			
 			try {
 				Utils.readDefaultConfig();
 			} catch (IOException | RuntimeException e1) {
-				e1.printStackTrace();
-				System.out.println("ERROR: Required parameters for running the application not found, exiting...");
+				logger.error(e1.getMessage());
+				logger.error("Required parameters for running the application not found, exiting...");
 				System.exit(404); // Terminate the application, if the required configuration is not found.
 			}
 		}
@@ -64,7 +73,7 @@ public class OCRestClient {
 
 		MultiValueMap<String, String> headers = new LinkedMultiValueMap<String, String>();
 		
-		//System.out.println("DEBUG: " + "Token: " + Utils.TOKEN);
+		logger.debug("Token: " + Utils.TOKEN);
 		
 		headers.add("Authorization", "Bearer " + Utils.TOKEN);
 		headers.add("Content-Type", "application/json");
@@ -80,7 +89,7 @@ public class OCRestClient {
 
 		String buildURL = Utils.generateOSUrl("oapi", "buildconfigs");
 
-		// System.out.println("DEBUG: " + buildURL);
+		logger.debug("Build URL: " + buildURL);
 
 
 		ResponseEntity<String> resp = rt.exchange(buildURL, 
@@ -102,7 +111,7 @@ public class OCRestClient {
 
 		String buildURL = Utils.generateOSUrl("apis", "buildconfigs", name);
 
-		//System.out.println("DEBUG: " + buildURL);
+		logger.debug("Build URL: " + buildURL);
 
 		ResponseEntity<String> resp = rt.exchange(buildURL, 
 				HttpMethod.GET, 
@@ -120,6 +129,8 @@ public class OCRestClient {
 		HttpEntity<String> entity = new HttpEntity<String>(this.getHeaders());
 
 		String buildURL = Utils.generateOSUrl("apis", "builds") + "?labelSelector={label}";
+		
+		logger.debug("Build URL: " + buildURL);
 
 		ResponseEntity<String> resp = rt.exchange(buildURL, 
 				HttpMethod.GET, 
@@ -141,7 +152,7 @@ public class OCRestClient {
 
 		String buildURL = Utils.generateOSUrl("apis", "builds") + "?labelSelector={label}";
 
-		//System.out.println("DEBUG: " + buildURL);
+		logger.debug("Build URL: " + buildURL);
 
 		ResponseEntity<String> resp = rt.exchange(buildURL, 
 				HttpMethod.GET, 
@@ -180,7 +191,7 @@ public class OCRestClient {
 
 		String imageStreamURL = Utils.generateOSUrl("apis", "imagestreams");
 
-		//System.out.println("DEBUG: " + imageStreamURL);
+		logger.debug("ImageStream URL: " + imageStreamURL);
 		
 		ResponseEntity<List<Map<String,String>>> resp = null;
 
@@ -200,6 +211,7 @@ public class OCRestClient {
 		}
 		catch(HttpClientErrorException ex) {
 
+			logger.error(ex.getMessage());
 			Map<String, String> ex_map = new HashMap<String, String>();
 			ex_map.put("message", ex.getMessage());
 			List<Map<String,String>> ex_list = new LinkedList<Map<String,String>>();
@@ -218,7 +230,7 @@ public class OCRestClient {
 
 		String imageStreamURL = Utils.generateOSUrl("apis", "imagestreams", imageName);
 
-		//System.out.println("DEBUG: " + imageStreamURL);
+		logger.debug("ImageStream URL: " + imageStreamURL);
 		
 		ResponseEntity<Map<String,String>> res = null;
 
@@ -236,6 +248,7 @@ public class OCRestClient {
 						HttpStatus.OK);
 		}
 		catch (HttpClientErrorException ex) {
+			logger.error(ex.getMessage());
 			Map<String, String> ex_map = new HashMap<String, String>();
 			ex_map.put("message", ex.getMessage());
 			res = new ResponseEntity<Map<String,String>>(ex_map, ex.getStatusCode());
@@ -271,6 +284,7 @@ public class OCRestClient {
 		}
 		catch(HttpClientErrorException ex) {
 
+			logger.error(ex.getMessage());
 			resp = new ResponseEntity<String>(OSJsonParser.parseBuildConfigError(ex.getResponseBodyAsString()), ex.getStatusCode());
 		}
 		return resp;
@@ -345,7 +359,8 @@ public class OCRestClient {
 		resp = rt.exchange(e, String.class);
 		}
 		
-		catch(HttpClientErrorException ex) {	
+		catch(HttpClientErrorException ex) {
+			logger.error(ex.getMessage());
 			return new ResponseEntity<String>(ex.getResponseBodyAsString(), ex.getStatusCode());
 		}
 		
@@ -380,7 +395,7 @@ public class OCRestClient {
 		}
 		
 		catch(HttpClientErrorException ex) {
-			
+			logger.error(ex.getMessage());
 			resp = new ResponseEntity<String>(ex.getResponseBodyAsString(), ex.getStatusCode());
 			
 		}
@@ -403,6 +418,8 @@ public class OCRestClient {
 			String build_name = buildNamesIterator.next();
 			
 			String buildDeleteURL = Utils.generateOSUrl("apis", "builds", build_name);
+			
+			logger.debug("BuildDeleteURL: " + buildDeleteURL);
 
 			
 			try {
@@ -417,6 +434,7 @@ public class OCRestClient {
 			}
 			
 			catch(HttpClientErrorException ex) {
+				logger.error(ex.getMessage());
 				return new ResponseEntity<String>(ex.getResponseBodyAsString(), ex.getStatusCode());
 			}
 			
@@ -444,6 +462,7 @@ public class OCRestClient {
 		}
 		
 		catch(HttpClientErrorException ex) {
+			logger.error(ex.getMessage());
 			return new ResponseEntity<String>(ex.getResponseBodyAsString(), ex.getStatusCode());
 		}
 		

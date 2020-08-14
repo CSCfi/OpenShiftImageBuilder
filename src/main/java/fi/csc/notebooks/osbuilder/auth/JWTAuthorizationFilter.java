@@ -16,6 +16,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -24,7 +26,9 @@ import org.springframework.security.web.authentication.www.BasicAuthenticationFi
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import ch.qos.logback.classic.Level;
 import fi.csc.notebooks.osbuilder.constants.SecurityConstants;
+import fi.csc.notebooks.osbuilder.utils.Utils;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.MalformedJwtException;
@@ -32,6 +36,9 @@ import io.jsonwebtoken.SignatureException;
 
 public class JWTAuthorizationFilter extends BasicAuthenticationFilter {
 
+	private static final Logger logger = LoggerFactory.getLogger(JWTAuthorizationFilter.class);
+	ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(logger.getName());
+	
     public JWTAuthorizationFilter(AuthenticationManager authManager) {
         super(authManager);
     }
@@ -59,18 +66,23 @@ public class JWTAuthorizationFilter extends BasicAuthenticationFilter {
     }
 
     private UsernamePasswordAuthenticationToken getAuthentication(HttpServletRequest request) {
+    	
+    	if(Utils.getDebugState())
+    		root.setLevel(Level.DEBUG);
+    	
         String token = request.getHeader(SecurityConstants.HEADER_STRING);
         if (token != null) {
             // parse the token.
         	
         	token  = token.replace(SecurityConstants.TOKEN_PREFIX, "");
-        	//System.out.println("DEBUG: " + token);
+        	
+        	logger.debug("Checking token received : " + token);
         		
         	byte[] keyBytes = null;
 			try {
 				keyBytes = Files.readAllBytes(Paths.get(SecurityConstants.PUBLIC_KEY_DER_PATH));
 			} catch (IOException e1) {
-				e1.printStackTrace();
+				logger.error(e1.getMessage());
 			}
 
 			 X509EncodedKeySpec spec =
@@ -79,39 +91,41 @@ public class JWTAuthorizationFilter extends BasicAuthenticationFilter {
 					try {
 						kf = KeyFactory.getInstance("RSA");
 					} catch (NoSuchAlgorithmException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
+						logger.error(e.getMessage());
 					}
 				    PublicKey publicKey = null;
 					try {
 						publicKey = kf.generatePublic(spec);
 					} catch (InvalidKeySpecException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
+						logger.error(e.getMessage());
 			
 					}
 					
 					
 			String parsedTokenJsonBody = "";
         	try {
-        	parsedTokenJsonBody = Jwts.parser()
+        		
+        		parsedTokenJsonBody = Jwts.parser()
         			//.setSigningKey(SecurityConstants.SECRET.getBytes())
         			.setSigningKey(publicKey)
         			.parse(token)
         			.getBody().toString();
         	}
         	catch(ExpiredJwtException | MalformedJwtException | SignatureException | IllegalArgumentException e) {
-        		System.out.println(e.getMessage());
+        		logger.error(e.getMessage());
         		return null;
         	}
+        	
+        	logger.debug("Parsed Token: " + parsedTokenJsonBody);
+        	
         	JsonObject tokenBody = JsonParser.parseString(parsedTokenJsonBody).getAsJsonObject();
-        	//System.out.println("DEBUG: " + tokenBody);
         	
         	String user = tokenBody.get("sub").getAsString();
         	
         	
 			
             if (user != null) {
+            	logger.info("Authorization Succeeded for " + user);
                 return new UsernamePasswordAuthenticationToken(user, null, new ArrayList<>());
             }
             return null;

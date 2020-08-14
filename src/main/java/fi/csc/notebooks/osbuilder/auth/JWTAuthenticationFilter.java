@@ -20,6 +20,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -31,18 +33,25 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
+import ch.qos.logback.classic.Level;
 import fi.csc.notebooks.osbuilder.constants.SecurityConstants;
 import fi.csc.notebooks.osbuilder.models.ApplicationUser;
+import fi.csc.notebooks.osbuilder.utils.Utils;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 
 public class JWTAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
 	
-	private Gson gson;
+	private static final Logger logger = LoggerFactory.getLogger(JWTAuthorizationFilter.class);
+	ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(logger.getName());
 	
+	private Gson gson;
     private AuthenticationManager authenticationManager;
 
+    
     public JWTAuthenticationFilter(AuthenticationManager authenticationManager) {
+    	if(Utils.getDebugState())
+    		root.setLevel(Level.DEBUG);
         this.authenticationManager = authenticationManager;
         this.gson = new Gson();
     }
@@ -56,16 +65,23 @@ public class JWTAuthenticationFilter extends UsernamePasswordAuthenticationFilte
             ApplicationUser creds = new ObjectMapper()
                     .readValue(req.getInputStream(), ApplicationUser.class);
 
-            System.out.println(creds);
+
+            logger.debug("Attempting authentication for username : " + creds.getUsername());
+            
             return authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             creds.getUsername(),
                             creds.getPassword(),
                             new ArrayList<>())
             );
-        } catch (IOException e) {
+        }
+    	catch (AuthenticationException ae) {
+    		logger.error("Could not login: Invalid Credentials"); // In future, accounts maybe locked or disabled, need to be caught differently
+    	}
+    	catch (IOException e) {
             throw new RuntimeException(e);
         }
+    	return null;
     }
 
     @Override
@@ -84,15 +100,13 @@ public class JWTAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 		try {
 			kf = KeyFactory.getInstance("RSA");
 		} catch (NoSuchAlgorithmException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			logger.error(e.getMessage());
 		}
          PrivateKey privateKey = null;
 		try {
 			privateKey = kf.generatePrivate(spec);
 		} catch (InvalidKeySpecException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			logger.error(e.getMessage());
 		}
     	
     	
@@ -104,7 +118,7 @@ public class JWTAuthenticationFilter extends UsernamePasswordAuthenticationFilte
     	.signWith(SignatureAlgorithm.RS512, privateKey)
     	.compact();
     	
-    	
+    	logger.debug("TOKEN created: " + token);
     	/*
         String token = JWT.create()
                 .withSubject(((User) auth.getPrincipal()).getUsername())
@@ -118,5 +132,7 @@ public class JWTAuthenticationFilter extends UsernamePasswordAuthenticationFilte
         userToken.addProperty("token", token);
         userToken.addProperty("username", username);
         res.getWriter().write(gson.toJson(userToken));
+        
+        logger.info("Login Succeeded, JWT Token returned");
     }
 }
