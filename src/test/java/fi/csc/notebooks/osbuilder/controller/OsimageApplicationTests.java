@@ -5,7 +5,6 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -27,10 +26,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.web.context.WebApplicationContext;
 
 import com.google.gson.JsonObject;
 
@@ -234,13 +230,7 @@ class OsimageApplicationTests {
 	
 	@Test
 	void buildAndImagetest() throws Exception {
-		
-		String uri = "https://github.com/mockrepo";
-		Optional<String> branch = Optional.of("master");
-		Optional<String> contextDir = Optional.of("/home");
-		String hash_all = Utils.generateHash(uri, branch, contextDir);
-		
-		
+			
 		mvc.perform(
 				post("/api/buildconfig").with(user("test"))
 				.param("url", "https://github.com/mockrepo")

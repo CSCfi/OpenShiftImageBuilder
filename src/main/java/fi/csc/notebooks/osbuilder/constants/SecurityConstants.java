@@ -14,6 +14,4 @@ public  final class SecurityConstants {
     public static final String NAMESPACE_FILEPATH = "/var/run/secrets/kubernetes.io/serviceaccount/namespace";
     public static final String TOKEN_FILEPATH = "/var/run/secrets/kubernetes.io/serviceaccount/token";
     
-    public static final String CLUSTER_PROPERTIES_PATH = "/config/cluster.properties";
-    
 }

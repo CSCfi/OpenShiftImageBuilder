@@ -79,6 +79,8 @@ objects:
                 value: application
               - name: SPRING_CONFIG_LOCATION
                 value: file:${APPLICATION_PROPERTIES_MOUNT_DIR}/
+              - name: APP_DEBUG
+                value: "false"
             volumeMounts:
               - mountPath: /config/keys
                 name: pkcs8-keys-store
@@ -141,6 +143,8 @@ objects:
       spring.h2.console.enabled=true
       spring.h2.console.path=/h2-console
       spring.h2.console.settings.web-allow-others=true
+      logging.level.org.springframework.web=WARN
+      logging.level.org.hibernate=WARN
 
 - apiVersion: v1
   kind: Service

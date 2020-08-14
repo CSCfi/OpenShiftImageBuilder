@@ -1,5 +1,9 @@
 package fi.csc.notebooks.osbuilder.controller;
 
+import javax.annotation.PostConstruct;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -9,8 +13,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import ch.qos.logback.classic.Level;
 import fi.csc.notebooks.osbuilder.data.ApplicationUserRepository;
 import fi.csc.notebooks.osbuilder.models.ApplicationUser;
+import fi.csc.notebooks.osbuilder.utils.Utils;
 
 @RestController
 @RequestMapping("/users")
@@ -18,6 +24,15 @@ public class UserController {
 
     private ApplicationUserRepository applicationUserRepository;
     private BCryptPasswordEncoder bCryptPasswordEncoder;
+    
+    private static final Logger logger = LoggerFactory.getLogger(UserController.class);
+    ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(logger.getName());
+    
+	@PostConstruct
+	public void initialize() {
+		if(Utils.getDebugState())
+    		root.setLevel(Level.DEBUG);
+	}
 
     public UserController(ApplicationUserRepository applicationUserRepository,
                           BCryptPasswordEncoder bCryptPasswordEncoder) {
@@ -32,7 +47,9 @@ public class UserController {
         	return new ResponseEntity<String>("Username already exists", HttpStatus.CONFLICT);
         
         applicationUserRepository.save(user);
-        System.out.println("Created user with username: " + user.getUsername());
+        
+        logger.info("Created user with username: " + user.getUsername());
+        
         return new ResponseEntity<String>(HttpStatus.OK);
         
     }

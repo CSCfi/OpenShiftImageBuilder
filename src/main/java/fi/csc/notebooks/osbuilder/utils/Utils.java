@@ -49,6 +49,18 @@ public final class Utils {
 	
 	}
 	
+	/**
+	 * Get the current debug state for the application
+	 * @return boolean value of the debug state
+	 */
+	
+	public static boolean getDebugState() {
+		
+		/* IMPORTANT: 'DEBUG' env var also activates the Spring's native debug messages, which becomes too verbose */
+		String _DEBUG = System.getenv("APP_DEBUG"); // Hence, we use APP_DEBUG as the env var here
+		return Boolean.valueOf(_DEBUG); 
+		
+	}
 	
 	/**
 	 * @param apiType which can be opi for OpenShift and apis for k8s
