@@ -140,6 +140,9 @@ public String generateOAUTHUrl() {
  */
 public static String generateHash(String url, Optional<String> branch, Optional<String> contextDir) {
 	
+	if(url.isEmpty())
+		return "";
+	
 	StringBuilder sb = new StringBuilder(url);
 	if (url.endsWith("/"))
 		sb.deleteCharAt(sb.length()-1);
