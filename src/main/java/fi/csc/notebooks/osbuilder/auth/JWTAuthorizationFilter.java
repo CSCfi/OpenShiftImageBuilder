@@ -72,39 +72,28 @@ public class JWTAuthorizationFilter extends BasicAuthenticationFilter {
     	
         String token = request.getHeader(SecurityConstants.HEADER_STRING);
         if (token != null) {
-            // parse the token.
+            // Parse the JWT token.
         	
         	token  = token.replace(SecurityConstants.TOKEN_PREFIX, "");
         	
         	logger.debug("Checking token received : " + token);
         		
-        	byte[] keyBytes = null;
+			byte[] keyBytes = null;
+			KeyFactory kf = null;
+			PublicKey publicKey = null;		
 			try {
-				keyBytes = Files.readAllBytes(Paths.get(SecurityConstants.PUBLIC_KEY_DER_PATH));
-			} catch (IOException e1) {
-				logger.error(e1.getMessage());
-			}
-
-			 X509EncodedKeySpec spec =
-				      new X509EncodedKeySpec(keyBytes);
-				    KeyFactory kf = null;
-					try {
-						kf = KeyFactory.getInstance("RSA");
-					} catch (NoSuchAlgorithmException e) {
-						logger.error(e.getMessage());
-					}
-				    PublicKey publicKey = null;
-					try {
-						publicKey = kf.generatePublic(spec);
-					} catch (InvalidKeySpecException e) {
-						logger.error(e.getMessage());
-			
-					}
-					
+					keyBytes = Files.readAllBytes(Paths.get(SecurityConstants.PUBLIC_KEY_DER_PATH));
+					kf = KeyFactory.getInstance("RSA");
+					X509EncodedKeySpec spec = new X509EncodedKeySpec(keyBytes);
+					publicKey = kf.generatePublic(spec);
+			} catch (InvalidKeySpecException | NoSuchAlgorithmException | IOException e) {
+					logger.error(e.getMessage());
+					logger.error("Authentication failed, check Key or RSA Algorithm");
+					return null;
+			}		
 					
 			String parsedTokenJsonBody = "";
         	try {
-        		
         		parsedTokenJsonBody = Jwts.parser()
         			//.setSigningKey(SecurityConstants.SECRET.getBytes())
         			.setSigningKey(publicKey)
@@ -112,8 +101,9 @@ public class JWTAuthorizationFilter extends BasicAuthenticationFilter {
         			.getBody().toString();
         	}
         	catch(ExpiredJwtException | MalformedJwtException | SignatureException | IllegalArgumentException e) {
-        		logger.error(e.getMessage());
-        		return null;
+        		logger.warn(e.getMessage());
+        		logger.warn(String.format("Authentication did not succeed for invalid token %s, please try again with a new token", token));
+				return null;
         	}
         	
         	logger.debug("Parsed Token: " + parsedTokenJsonBody);
@@ -125,9 +115,10 @@ public class JWTAuthorizationFilter extends BasicAuthenticationFilter {
         	
 			
             if (user != null) {
-            	logger.info("Authorization Succeeded for " + user);
+            	logger.debug("Authorization Succeeded for " + user);
                 return new UsernamePasswordAuthenticationToken(user, null, new ArrayList<>());
             }
+            logger.error("The code should not reach here, if you see this message, there is a new unforeseen error with the JWT Token mechanism!");
             return null;
         }
         return null;

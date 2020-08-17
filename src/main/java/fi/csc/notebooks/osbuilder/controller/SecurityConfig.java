@@ -49,6 +49,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
 }
 	
+	/* Inject UserDetailsServiceImpl which is backed by the database, containing user information */
 	@Override
     public void configure(AuthenticationManagerBuilder auth) throws Exception {
         auth.userDetailsService(userDetailsService).passwordEncoder(bCryptPasswordEncoder);
