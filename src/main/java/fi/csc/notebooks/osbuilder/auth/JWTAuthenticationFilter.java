@@ -93,19 +93,14 @@ public class JWTAuthenticationFilter extends UsernamePasswordAuthenticationFilte
     	
     	
     	byte[] keyBytes = Files.readAllBytes(Paths.get(SecurityConstants.PRIVATE_KEY_DER_PATH));
-
-        PKCS8EncodedKeySpec spec =
-          new PKCS8EncodedKeySpec(keyBytes);
+        PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(keyBytes);
         KeyFactory kf = null;
+        PrivateKey privateKey = null;
+        
 		try {
 			kf = KeyFactory.getInstance("RSA");
-		} catch (NoSuchAlgorithmException e) {
-			logger.error(e.getMessage());
-		}
-         PrivateKey privateKey = null;
-		try {
 			privateKey = kf.generatePrivate(spec);
-		} catch (InvalidKeySpecException e) {
+		} catch (InvalidKeySpecException | NoSuchAlgorithmException e) {
 			logger.error(e.getMessage());
 		}
     	
@@ -133,6 +128,6 @@ public class JWTAuthenticationFilter extends UsernamePasswordAuthenticationFilte
         userToken.addProperty("username", username);
         res.getWriter().write(gson.toJson(userToken));
         
-        logger.info("Login Succeeded, JWT Token returned");
+        logger.info("Login Succeeded for user: " + username + ", JWT Token returned");
     }
 }
