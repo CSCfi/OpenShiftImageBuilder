@@ -163,6 +163,8 @@ public class OCRestClient {
 
 
 		BuildStatusImage bsi = OSJsonParser.parseBuildListForStatusAndImage(resp.getBody());
+		
+		logger.debug("Build Name : " + bsi.getBuildName() + ", Status : " + bsi.getStatus());
 
 		return new ResponseEntity<BuildStatusImage>(bsi, HttpStatus.OK);
 
@@ -270,7 +272,7 @@ public class OCRestClient {
 		ResponseEntity<String> resp = null;
 
 		if(uri.isEmpty())
-			return new ResponseEntity<String>(HttpStatus.UNPROCESSABLE_ENTITY);
+			return new ResponseEntity<String>("URL Parameter is missing", HttpStatus.UNPROCESSABLE_ENTITY);
 
 		RequestEntity<String> e = new RequestEntity<String>(
 				OSJsonParser.getPOSTBody("BuildConfig", hash, uri, branch, contextDir, dockerfilePath).toString(),
@@ -302,9 +304,8 @@ public class OCRestClient {
 
 		String imageStreamURL = Utils.generateOSUrl("apis", "imagestreams");
 
-
 		if(hash.isEmpty())
-			throw new RuntimeException("The parameter hash is missing");
+			return new ResponseEntity<String>("Computed hash parameter was empty", HttpStatus.UNPROCESSABLE_ENTITY);
 
 		RequestEntity<String> e = new RequestEntity<String>(
 				OSJsonParser.getPOSTBody("ImageStream", hash).toString(),
@@ -346,7 +347,8 @@ public class OCRestClient {
 	public ResponseEntity<String> deleteBuildConfig(String hash) throws URISyntaxException{
 
 		String buildConfigDeleteURL = Utils.generateOSUrl("apis", "buildconfigs", hash);
-
+		logger.debug(buildConfigDeleteURL);
+		
 		ResponseEntity<String> resp = null;
 		
 		try {

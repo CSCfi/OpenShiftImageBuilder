@@ -90,6 +90,10 @@ class OsimageApplicationTests {
 		.when(client.postBuildConfig(hash_nouri, "", branch, contextDir, dockerfilePath))
 		.thenReturn(new ResponseEntity<String>(HttpStatus.NOT_ACCEPTABLE));
 		
+		Mockito
+		.when(client.postImageStreamConfig(hash_nouri))
+		.thenReturn(new ResponseEntity<String>(HttpStatus.NOT_ACCEPTABLE));
+		
 		
 		/** When the branch is missing , then openshift takes the default master **/
 		

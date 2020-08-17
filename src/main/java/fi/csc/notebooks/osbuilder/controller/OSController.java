@@ -6,7 +6,6 @@ import java.util.Map;
 import java.util.Optional;
 
 import javax.annotation.PostConstruct;
-import javax.xml.bind.ValidationException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +21,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.HttpClientErrorException;
 
 import ch.qos.logback.classic.Level;
 import fi.csc.notebooks.osbuilder.client.OCRestClient;
@@ -115,7 +114,7 @@ public class OSController {
 	
 	
 	
-	@PostMapping("/buildconfig")  // TODO: HANDLE 409 CONFLICTS
+	@PostMapping("/buildconfig")
 	ResponseEntity<String> postBuildConfig(
 			@RequestParam String url,
 			@RequestParam Optional<String> branch,
@@ -125,46 +124,44 @@ public class OSController {
 		
 		String hash = Utils.generateHash(url, branch, contextDir);
 		
-		try {
+		ResponseEntity<String> build_resp = client.postBuildConfig(hash, url, branch, contextDir, dockerfilePath); // Create BuildConfig object
+		logger.debug(build_resp.getStatusCodeValue() + " -- " + build_resp.getBody());
 		
-			ResponseEntity<String> build_resp = client.postBuildConfig(hash, url, branch, contextDir, dockerfilePath);
-			logger.debug(build_resp.getStatusCodeValue() + " -- " + build_resp.getBody());
-			if (!build_resp.getStatusCode().is2xxSuccessful()) { // Error
-				logger.error(build_resp.getBody());
-				return build_resp;
-			}
-		}
-		catch (RestClientException e) {
-			logger.error(e.getMessage());
-			return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-		}
+		if(!build_resp.getStatusCode().is2xxSuccessful())
+			return build_resp;
 		
+		/* BuildConfig and ImageStream objects go hand in hand, and hence should be created together 
+		 * If BuildConfig creation succeeds but ImageStream object creation fails, then simply delete the created BuildConfig object
+		 */
 		
 		try {
 		
-			ResponseEntity<String> image_resp = client.postImageStreamConfig(hash);
+			ResponseEntity<String> image_resp = client.postImageStreamConfig(hash); // Create ImageStream object
 			logger.debug(image_resp.getStatusCodeValue() + " -- " + image_resp.getBody());
-			
-			if (!image_resp.getStatusCode().is2xxSuccessful())  // Error
-			{
-				try {
-					
-				client.deleteBuildConfig(hash); // Backtrack the created build config object
-				}
-				catch (RestClientException e) {
-					logger.error(e.getMessage());
-					return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-				}
+			if (!image_resp.getStatusCode().is2xxSuccessful())
 				return image_resp;
-			}
 			
 		}
-		catch (RestClientException e) {
-			logger.error(e.getMessage());
-			return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+		catch (HttpClientErrorException ie) {
+			logger.error(ie.getMessage());
+			/* 409: CONFLICT error message generally means that the ImageStream object already exits
+			 * In this case do not delete the created BuildConfig object. 
+			 */
+			if (ie.getRawStatusCode() != 409) { // For every other case, delete the created BuildConfig object
+				try {
+					logger.warn("Error creating ImageStream, deleting associated BuildConfig : " + hash);
+					client.deleteBuildConfig(hash); // Backtrack the created BuildConfig object
+				}
+				catch (HttpClientErrorException de) {
+					logger.error(de.getMessage());
+					return new ResponseEntity<String>(de.getMessage(), HttpStatus.valueOf(de.getRawStatusCode()));
+				}
+				
+				return new ResponseEntity<String>(ie.getMessage(), ie.getStatusCode());
+			}
 		}
 		
-		logger.info("Build created for " + hash);
+		logger.info("BuildConfig and ImageStream created for " + hash);
 		ResponseEntity<String> result = new ResponseEntity<String>(hash, HttpStatus.CREATED); // OK
 		return result;
 	}
@@ -174,16 +171,8 @@ public class OSController {
 	@PostMapping("/build/{buildConfigName}")
 	ResponseEntity<String> startBuild(@PathVariable String buildConfigName) throws URISyntaxException{
 		
-		
-		ResponseEntity<String> result;
-		try {
-			result = client.postBuildRequest(buildConfigName);
-		} catch (ValidationException e) {
-			logger.error(e.getMessage());
-			return new ResponseEntity<String>(e.getMessage(), HttpStatus.NOT_ACCEPTABLE);
-		}
 		logger.info("Build started for : " + buildConfigName);
-		return result;
+		return client.postBuildRequest(buildConfigName);
 		
 		
 	}
