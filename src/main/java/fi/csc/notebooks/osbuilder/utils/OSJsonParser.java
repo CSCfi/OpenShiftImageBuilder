@@ -312,11 +312,14 @@ private static JsonObject _substituteVarsBuildRequest(JsonObject root, String ha
 private static Map<String, String> _parseImageStreamObject(JsonObject imageStreamObj){
 	
 	String imageName = imageStreamObj.get("metadata").getAsJsonObject().get("name").getAsString();
+	/*
 	String imageUrl = imageStreamObj.getAsJsonObject()
 			.get("status").getAsJsonObject()
 			.get("dockerImageRepository").getAsString();
-	
+	*/
+	// We need to compute the correct Image URL because the one obtained from the ImageStream object contains internal image url 
 	Map<String, String> resp = new HashMap<String, String>();
+	String imageUrl = String.format("%s/%s/%s", Utils.OS_IMAGE_REGISTRY_URL, Utils.NAMESPACE, imageName);
 	resp.put("imageName", imageName);
 	resp.put("imageUrl", imageUrl);
 	

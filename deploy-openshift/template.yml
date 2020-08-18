@@ -69,8 +69,10 @@ objects:
                 protocol: TCP
             resources: {}
             env:
-              - name: OPENSHIFT_CLUSTER_ENDPOINT
-                value: ${OPENSHIFT_CLUSTER_ENDPOINT}
+              - name: OPENSHIFT_CLUSTER_URL
+                value: ${OPENSHIFT_CLUSTER_URL}
+              - name: OPENSHIFT_IMAGE_REGISTRY_URL
+                value: ${OPENSHIFT_IMAGE_REGISTRY_URL}
               - name: OPENSHIFT_CUSTOM_PROJECT
                 value: ${OPENSHIFT_CUSTOM_PROJECT}
               - name: OPENSHIFT_SERVICE_ACCOUNT_TOKEN
@@ -284,10 +286,15 @@ parameters:
   displayName: Filename for the pem file containing the private key required for JWT authentication
   name: PEM_FILENAME
   required: true
-- description: Openhsift Cluster Endpoint
-  displayName: Openshift Cluster Endpoint for accessing the REST APIs
-  name: OPENSHIFT_CLUSTER_ENDPOINT
+- description: Openhsift Cluster URL
+  displayName: Openshift Cluster URL for accessing the REST APIs
+  name: OPENSHIFT_CLUSTER_URL
   value: https://rahti.csc.fi:8443/
+  required: true
+- description: Openhsift Image Registry URL
+  displayName: Openshift Image Registry URL for fetching the correct Image URL of the built image
+  name: OPENSHIFT_IMAGE_REGISTRY_URL
+  value: docker-registry.rahti.csc.fi
   required: true
 - description: Username for accessing the App Database
   from: '[A-Z0-9]{12}'

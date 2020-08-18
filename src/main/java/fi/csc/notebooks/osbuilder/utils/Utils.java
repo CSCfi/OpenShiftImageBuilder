@@ -11,19 +11,24 @@ import fi.csc.notebooks.osbuilder.constants.SecurityConstants;
 
 public final class Utils {
 
-	 // Make sure this file is present or mounted as a ConfigMap
+	
+	/* All the essential variables are listed here **/
 	
 	public static String NAMESPACE;
-	public static String OS_ENDPOINT;
+	public static String OS_CLUSTER_URL;
+	public static String OS_IMAGE_REGISTRY_URL;
 	public static String TOKEN;
 	
 	
 	public static void readDefaultConfig() throws IOException, RuntimeException {
 		
-		OS_ENDPOINT = System.getenv("OPENSHIFT_CLUSTER_ENDPOINT");
+		OS_CLUSTER_URL = System.getenv("OPENSHIFT_CLUSTER_URL");
+		OS_IMAGE_REGISTRY_URL = System.getenv("OPENSHIFT_IMAGE_REGISTRY_URL");
 		
-		if (OS_ENDPOINT == null)
-			throw new RuntimeException("Environment variable for OpenShift cluster endpoint missing");
+		if (OS_CLUSTER_URL == null || OS_CLUSTER_URL.isEmpty())
+			throw new RuntimeException("Environment variable for OpenShift Cluster URL missing");
+		if (OS_IMAGE_REGISTRY_URL == null || OS_IMAGE_REGISTRY_URL.isEmpty())
+			throw new RuntimeException("Environment variable for OpenShift Image Registry URL missing");
 		
 			NAMESPACE = new String(Files.readAllBytes(Paths.get(SecurityConstants.NAMESPACE_FILEPATH)));
 			TOKEN = new String(Files.readAllBytes(Paths.get(SecurityConstants.TOKEN_FILEPATH)));
@@ -41,9 +46,13 @@ public final class Utils {
 		if (TOKEN == null || TOKEN.isEmpty())
 			throw new RuntimeException("Environment variable for Token missing");
 		
-		OS_ENDPOINT = System.getenv("OPENSHIFT_CLUSTER_ENDPOINT");
-		if (OS_ENDPOINT == null || OS_ENDPOINT.isEmpty())
-			throw new RuntimeException("Environment variable for cluster endpoint missing");
+		OS_CLUSTER_URL = System.getenv("OPENSHIFT_CLUSTER_URL");
+		if (OS_CLUSTER_URL == null || OS_CLUSTER_URL.isEmpty())
+			throw new RuntimeException("Environment variable for Cluster Url missing");
+		
+		OS_IMAGE_REGISTRY_URL = System.getenv("OPENSHIFT_IMAGE_REGISTRY_URL");
+		if (OS_IMAGE_REGISTRY_URL == null || OS_IMAGE_REGISTRY_URL.isEmpty())
+			throw new RuntimeException("Environment variable for OpenShift Image Registry Url missing");
 	
 		
 	
@@ -80,7 +89,7 @@ public final class Utils {
 		
 		
 		return String.format("%s%s%s%s%s%s", 
-				OS_ENDPOINT,
+				OS_CLUSTER_URL,
 				apiType,
 				"/v1/namespaces/",
 				NAMESPACE,
@@ -110,7 +119,7 @@ public static  String generateOSUrl(String apiType, String resource, String name
 		}
 		
 		return String.format("%s%s%s%s%s%s%s%s", 
-				OS_ENDPOINT,
+				OS_CLUSTER_URL,
 				apiType,
 				"/v1/namespaces/",
 				NAMESPACE,
@@ -125,7 +134,7 @@ public static  String generateOSUrl(String apiType, String resource, String name
 public String generateOAUTHUrl() {
 	
 	return String.format("%s%s", 
-			OS_ENDPOINT,
+			OS_CLUSTER_URL,
 			"oauth/authorize"
 			);
 	}
