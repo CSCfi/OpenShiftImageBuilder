@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import javax.xml.bind.ValidationException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,13 +90,21 @@ public class OCRestClient {
 
 		logger.debug("Build URL: " + buildURL);
 
+		ResponseEntity<String> resp = null;
 
-		ResponseEntity<String> resp = rt.exchange(buildURL, 
+		try {
+			
+			resp = rt.exchange(buildURL, 
 				HttpMethod.GET, 
 				entity, 
 				String.class
 				);
 
+		}
+		catch(HttpClientErrorException ex) {
+			logger.error(ex.getMessage());
+			return new ResponseEntity<String>(ex.getMessage(), ex.getStatusCode());
+		}
 
 
 		return resp;
@@ -113,11 +120,20 @@ public class OCRestClient {
 
 		logger.debug("Build URL: " + buildURL);
 
-		ResponseEntity<String> resp = rt.exchange(buildURL, 
+		ResponseEntity<String> resp = null;
+		
+		try {
+			resp = rt.exchange(buildURL, 
 				HttpMethod.GET, 
 				entity, 
 				String.class
 				);
+		}
+		catch(HttpClientErrorException ex) {
+			logger.error(ex.getMessage());
+			return new ResponseEntity<String>(ex.getMessage(), ex.getStatusCode());
+		}
+		
 		return resp;
 
 	}
@@ -132,13 +148,20 @@ public class OCRestClient {
 		
 		logger.debug("Build URL: " + buildURL);
 
-		ResponseEntity<String> resp = rt.exchange(buildURL, 
+		ResponseEntity<String> resp = null;
+		
+		try {
+			resp = rt.exchange(buildURL, 
 				HttpMethod.GET, 
 				entity, 
 				String.class,
 				String.format("buildconfig=%s", buildId)
 				);
-
+		}
+		catch(HttpClientErrorException ex) {
+			logger.error(ex.getMessage());
+			return new ResponseEntity<String>(ex.getMessage(), ex.getStatusCode());
+		}
 
 
 		return resp;
@@ -154,13 +177,19 @@ public class OCRestClient {
 
 		logger.debug("Build URL: " + buildURL);
 
-		ResponseEntity<String> resp = rt.exchange(buildURL, 
+		ResponseEntity<String> resp = null;
+		try {
+			resp = rt.exchange(buildURL, 
 				HttpMethod.GET, 
 				entity, 
 				String.class,
 				String.format("buildconfig=%s", buildConfigName)
 				);
-
+		}
+		catch(HttpClientErrorException ex) {
+			logger.error(ex.getMessage());
+			return new ResponseEntity<BuildStatusImage>(ex.getStatusCode());
+		}
 
 		BuildStatusImage bsi = OSJsonParser.parseBuildListForStatusAndImage(resp.getBody());
 		
@@ -250,7 +279,10 @@ public class OCRestClient {
 						HttpStatus.OK);
 		}
 		catch (HttpClientErrorException ex) {
-			logger.error(ex.getMessage());
+			if(ex.getRawStatusCode() == 404)
+				logger.warn(ex.getMessage());
+			else
+				logger.error(ex.getMessage());
 			Map<String, String> ex_map = new HashMap<String, String>();
 			ex_map.put("message", ex.getMessage());
 			res = new ResponseEntity<Map<String,String>>(ex_map, ex.getStatusCode());
@@ -320,7 +352,7 @@ public class OCRestClient {
 	}
 
 
-	public ResponseEntity<String> postBuildRequest(String hash) throws URISyntaxException, ValidationException{
+	public ResponseEntity<String> postBuildRequest(String hash) throws URISyntaxException{
 
 		String buildRequestURL = Utils.generateOSUrl("apis", "buildconfigs", hash) + "/instantiate";
 
@@ -330,9 +362,16 @@ public class OCRestClient {
 				HttpMethod.POST, 
 				new URI(buildRequestURL) 
 				);
-
-		ResponseEntity<String> resp = rt.exchange(e, String.class);
-
+		
+		ResponseEntity<String> resp = null;
+		try {
+			resp = rt.exchange(e, String.class);
+		}
+		catch(HttpClientErrorException ex) {
+			logger.error(ex.getMessage());
+			return new ResponseEntity<String>(ex.getMessage(), ex.getStatusCode());
+		}
+		
 		return resp;
 
 	}
@@ -352,13 +391,13 @@ public class OCRestClient {
 		ResponseEntity<String> resp = null;
 		
 		try {
-		RequestEntity<String> e = new RequestEntity<String>(
+			RequestEntity<String> e = new RequestEntity<String>(
 				this.getHeaders(), 
 				HttpMethod.DELETE, 
 				new URI(buildConfigDeleteURL)
 				);
 
-		resp = rt.exchange(e, String.class);
+			resp = rt.exchange(e, String.class);
 		}
 		
 		catch(HttpClientErrorException ex) {

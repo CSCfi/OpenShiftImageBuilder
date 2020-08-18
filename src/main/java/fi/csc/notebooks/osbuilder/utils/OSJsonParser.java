@@ -35,8 +35,8 @@ public final class OSJsonParser {
 		
 		BuildStatusImage bsi = new BuildStatusImage();
 		
-		if (list_size>0) {
-			latestItem = buildList.get(list_size-1).getAsJsonObject();
+		if (list_size>0) { // When there are multiple Builds corresponding to a BuildConfig
+			latestItem = buildList.get(list_size-1).getAsJsonObject(); // Fetch the status of the latest Build
 			
 			String buildName = latestItem.get("metadata").getAsJsonObject().get("name").getAsString();
 			bsi.setBuildName(buildName);
