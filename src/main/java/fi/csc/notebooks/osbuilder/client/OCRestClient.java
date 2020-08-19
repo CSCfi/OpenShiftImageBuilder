@@ -103,7 +103,7 @@ public class OCRestClient {
 		}
 		catch(HttpClientErrorException ex) {
 			logger.error(ex.getMessage());
-			return new ResponseEntity<String>(ex.getMessage(), ex.getStatusCode());
+			return new ResponseEntity<String>(OSJsonParser.parseErrorObject(ex.getResponseBodyAsString()), ex.getStatusCode());
 		}
 
 
@@ -131,7 +131,7 @@ public class OCRestClient {
 		}
 		catch(HttpClientErrorException ex) {
 			logger.error(ex.getMessage());
-			return new ResponseEntity<String>(ex.getMessage(), ex.getStatusCode());
+			return new ResponseEntity<String>(OSJsonParser.parseErrorObject(ex.getResponseBodyAsString()), ex.getStatusCode());
 		}
 		
 		return resp;
@@ -160,7 +160,7 @@ public class OCRestClient {
 		}
 		catch(HttpClientErrorException ex) {
 			logger.error(ex.getMessage());
-			return new ResponseEntity<String>(ex.getMessage(), ex.getStatusCode());
+			return new ResponseEntity<String>(OSJsonParser.parseErrorObject(ex.getResponseBodyAsString()), ex.getStatusCode());
 		}
 
 
@@ -284,7 +284,7 @@ public class OCRestClient {
 			else
 				logger.error(ex.getMessage());
 			Map<String, String> ex_map = new HashMap<String, String>();
-			ex_map.put("message", ex.getMessage());
+			ex_map.put("message", OSJsonParser.parseErrorObject(ex.getResponseBodyAsString()));
 			res = new ResponseEntity<Map<String,String>>(ex_map, ex.getStatusCode());
 		}
 
@@ -319,7 +319,7 @@ public class OCRestClient {
 		catch(HttpClientErrorException ex) {
 
 			logger.error(ex.getMessage());
-			resp = new ResponseEntity<String>(OSJsonParser.parseBuildConfigError(ex.getResponseBodyAsString()), ex.getStatusCode());
+			resp = new ResponseEntity<String>(OSJsonParser.parseErrorObject(ex.getResponseBodyAsString()), ex.getStatusCode());
 		}
 		return resp;
 	}
@@ -369,7 +369,7 @@ public class OCRestClient {
 		}
 		catch(HttpClientErrorException ex) {
 			logger.error(ex.getMessage());
-			return new ResponseEntity<String>(ex.getMessage(), ex.getStatusCode());
+			return new ResponseEntity<String>(OSJsonParser.parseErrorObject(ex.getResponseBodyAsString()), ex.getStatusCode());
 		}
 		
 		return resp;
@@ -402,7 +402,7 @@ public class OCRestClient {
 		
 		catch(HttpClientErrorException ex) {
 			logger.error(ex.getMessage());
-			return new ResponseEntity<String>(ex.getResponseBodyAsString(), ex.getStatusCode());
+			return new ResponseEntity<String>(OSJsonParser.parseErrorObject(ex.getResponseBodyAsString()), ex.getStatusCode());
 		}
 		
 		return resp;
@@ -437,7 +437,7 @@ public class OCRestClient {
 		
 		catch(HttpClientErrorException ex) {
 			logger.error(ex.getMessage());
-			resp = new ResponseEntity<String>(ex.getResponseBodyAsString(), ex.getStatusCode());
+			resp = new ResponseEntity<String>(OSJsonParser.parseErrorObject(ex.getResponseBodyAsString()), ex.getStatusCode());
 			
 		}
 		return resp;
@@ -476,7 +476,7 @@ public class OCRestClient {
 			
 			catch(HttpClientErrorException ex) {
 				logger.error(ex.getMessage());
-				return new ResponseEntity<String>(ex.getResponseBodyAsString(), ex.getStatusCode());
+				return new ResponseEntity<String>(OSJsonParser.parseErrorObject(ex.getResponseBodyAsString()), ex.getStatusCode());
 			}
 			
 		}
@@ -504,7 +504,7 @@ public class OCRestClient {
 		
 		catch(HttpClientErrorException ex) {
 			logger.error(ex.getMessage());
-			return new ResponseEntity<String>(ex.getResponseBodyAsString(), ex.getStatusCode());
+			return new ResponseEntity<String>(OSJsonParser.parseErrorObject(ex.getResponseBodyAsString()), ex.getStatusCode());
 		}
 		
 		return resp;

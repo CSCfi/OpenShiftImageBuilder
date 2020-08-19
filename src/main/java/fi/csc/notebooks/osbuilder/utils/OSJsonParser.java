@@ -9,6 +9,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonIOException;
@@ -17,9 +20,13 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSyntaxException;
 
+import fi.csc.notebooks.osbuilder.auth.JWTAuthorizationFilter;
 import fi.csc.notebooks.osbuilder.models.BuildStatusImage;
 
 public final class OSJsonParser {
+	
+	private static final Logger logger = LoggerFactory.getLogger(JWTAuthorizationFilter.class);
+	ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(logger.getName());
 	
 	/** Parse Build and BuildConfig related objects here **/
 	
@@ -51,10 +58,7 @@ public final class OSJsonParser {
 			
 		}
 		
-		return bsi;
-		
-		
-		
+		return bsi;		
 	}
 	
 	public static List<String> parseBuildListForNames(String buildsJson){
@@ -69,23 +73,9 @@ public final class OSJsonParser {
 			String build_name = item.getAsJsonObject().get("metadata").getAsJsonObject().get("name").getAsString();
 			
 			res.add(build_name);
-			
 		}
 		
-		return res;
-		
-		
-		
-		
-	}
-	
-	public static String parseBuildConfigError(String respBody){
-		JsonObject root = JsonParser.parseString(respBody).getAsJsonObject();
-		
-		String buildName = root.get("details").getAsJsonObject().get("name").getAsString();
-		
-		return buildName;
-		
+		return res;		
 	}
 	
 	
@@ -164,6 +154,23 @@ public final class OSJsonParser {
 		return root;
 	}
 	
+	
+	public static String parseErrorObject(String errorJson) {
+		
+		String error = "Unknown error, please check logs";
+		logger.warn(errorJson);
+		
+		try {
+			JsonElement root = JsonParser.parseString(errorJson);
+			JsonObject rootObj = root.getAsJsonObject();
+			error = rootObj.get("message").getAsString();
+		}
+		catch(Exception e) {
+			logger.error(e.getMessage());
+		}
+		
+		return error;
+	}
 	
 	
 	/** All helper functions go here **/
