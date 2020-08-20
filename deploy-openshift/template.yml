@@ -3,7 +3,7 @@ kind: Template
 labels:
   template: openshift-image-builder
 message: |- 
-  Access the backend via a web ui
+  The backend service is now running.
 metadata:
   annotations:
     description: Deploys Openshift Image Builder Utility on Openshift
@@ -51,7 +51,7 @@ objects:
         serviceAccount: ${APPLICATION_NAME}-osibuilder
         initContainers:
           - image: docker-registry.rahti.csc.fi/openshiftimagebuilder-images/pem-converter:latest
-            name: pem-to-java-pkcs8-converter
+            name: pem-to-java-pkcs8-der-converter
             volumeMounts:
               - mountPath: /config/private_key.pem
                 name: private-key-pem
