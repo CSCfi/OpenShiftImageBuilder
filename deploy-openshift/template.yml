@@ -135,6 +135,8 @@ objects:
   kind: ConfigMap
   metadata:
     name: ${APPLICATION_NAME}-application-properties
+    labels:
+      app: ${APPLICATION_NAME}
   data:
     application.properties: |
       spring.datasource.url=jdbc:h2:file:${DB_FILE_MOUNT_DIR}/db
