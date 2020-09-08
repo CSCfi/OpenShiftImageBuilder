@@ -147,7 +147,7 @@ public String generateOAUTHUrl() {
  * @param contextDir
  * @return
  */
-public static String generateHash(String url, Optional<String> branch, Optional<String> contextDir) {
+public static String generateHash(String url, Optional<String> branch, Optional<String> contextDir, Optional<String> dockerfilePath) {
 	
 	if(url.isEmpty())
 		return "";
@@ -164,6 +164,9 @@ public static String generateHash(String url, Optional<String> branch, Optional<
 	
 	if (contextDir.isPresent() && !contextDir.get().isEmpty())
 		sb.append(contextDir.get());
+	
+	if (dockerfilePath.isPresent() && !dockerfilePath.get().isEmpty())
+		sb.append(dockerfilePath.get());
 	
 	return DigestUtils.sha1Hex(sb.toString());
 	

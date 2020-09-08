@@ -69,12 +69,12 @@ class OsimageApplicationTests {
 		String uri = "https://github.com/mockrepo";
 		Optional<String> branch = Optional.of("master");
 		Optional<String> contextDir = Optional.of("/home");
-		Optional<String> dockerfilePath = Optional.empty();
-		String hash_all = Utils.generateHash(uri, branch, contextDir);
+		Optional<String> emptyDockerfilePath = Optional.empty();
+		String hash_all = Utils.generateHash(uri, branch, contextDir, emptyDockerfilePath);
 		
 		
 		Mockito
-		.when(client.postBuildConfig(hash_all, uri, branch, contextDir, dockerfilePath))
+		.when(client.postBuildConfig(hash_all, uri, branch, contextDir, emptyDockerfilePath))
 		.thenReturn(new ResponseEntity<String>(HttpStatus.CREATED));
 		
 		
@@ -84,10 +84,10 @@ class OsimageApplicationTests {
 		
 		/** When URL is absent **/
 		
-		String hash_nouri = Utils.generateHash("", branch, contextDir);
+		String hash_nouri = Utils.generateHash("", branch, contextDir, emptyDockerfilePath);
 		
 		Mockito
-		.when(client.postBuildConfig(hash_nouri, "", branch, contextDir, dockerfilePath))
+		.when(client.postBuildConfig(hash_nouri, "", branch, contextDir, emptyDockerfilePath))
 		.thenReturn(new ResponseEntity<String>(HttpStatus.NOT_ACCEPTABLE));
 		
 		Mockito
@@ -98,27 +98,27 @@ class OsimageApplicationTests {
 		/** When the branch is missing , then openshift takes the default master **/
 		
 		Optional<String> nobranch = Optional.empty();
-		String hash_nobranch = Utils.generateHash(uri, nobranch, contextDir);
+		String hash_nobranch = Utils.generateHash(uri, nobranch, contextDir, emptyDockerfilePath);
 		
 		Mockito
-		.when(client.postBuildConfig(hash_nobranch, uri, nobranch, contextDir, dockerfilePath))
+		.when(client.postBuildConfig(hash_nobranch, uri, nobranch, contextDir, emptyDockerfilePath))
 		.thenReturn(new ResponseEntity<String>(HttpStatus.CREATED));
 		
 		/** When the contextdir is missing, openshift takes the root dir **/
 		
 		Optional<String> no_dir = Optional.empty();
-		String hash_nodir = Utils.generateHash(uri, branch, no_dir);
+		String hash_nodir = Utils.generateHash(uri, branch, no_dir, emptyDockerfilePath);
 		
 		Mockito
-		.when(client.postBuildConfig(hash_nodir, uri, branch, no_dir, dockerfilePath))
+		.when(client.postBuildConfig(hash_nodir, uri, branch, no_dir, emptyDockerfilePath))
 		.thenReturn(new ResponseEntity<String>(HttpStatus.CREATED));
 		
 		/** When both the branch and contextDir are missing, openshift takes the default values **/
 		
-		String hash_nobranch_nodir = Utils.generateHash(uri, nobranch, no_dir);
+		String hash_nobranch_nodir = Utils.generateHash(uri, nobranch, no_dir, emptyDockerfilePath);
 		
 		Mockito
-		.when(client.postBuildConfig(hash_nobranch_nodir, uri, nobranch, contextDir, dockerfilePath))
+		.when(client.postBuildConfig(hash_nobranch_nodir, uri, nobranch, contextDir, emptyDockerfilePath))
 		.thenReturn(new ResponseEntity<String>(HttpStatus.CREATED));
 		
 		
@@ -126,10 +126,10 @@ class OsimageApplicationTests {
 		
 		String uri_image_error = "https://github.com/mock_image_error_repo";
 		
-		String hash_imagestream_error = Utils.generateHash(uri_image_error, branch, contextDir);
+		String hash_imagestream_error = Utils.generateHash(uri_image_error, branch, contextDir, emptyDockerfilePath);
 		
 		Mockito
-		.when(client.postBuildConfig(hash_imagestream_error, uri_image_error, branch, contextDir, dockerfilePath))
+		.when(client.postBuildConfig(hash_imagestream_error, uri_image_error, branch, contextDir, emptyDockerfilePath))
 		.thenReturn(new ResponseEntity<String>(HttpStatus.CREATED));
 		
 		Mockito
@@ -143,7 +143,7 @@ class OsimageApplicationTests {
 		.thenReturn(new ResponseEntity<String>(HttpStatus.CREATED));
 		
 		String uri_another = "https://github.com/anothermockrepo";
-		String hash_build_does_not_exist = Utils.generateHash(uri_another, branch, contextDir);
+		String hash_build_does_not_exist = Utils.generateHash(uri_another, branch, contextDir, emptyDockerfilePath);
 		
 		Mockito
 		.when(client.postBuildRequest(hash_build_does_not_exist))
@@ -213,7 +213,8 @@ class OsimageApplicationTests {
 		String uri = "https://github.com/mockrepo";
 		Optional<String> branch = Optional.of("master");
 		Optional<String> contextDir = Optional.of("/home");
-		String hash_all = Utils.generateHash(uri, branch, contextDir);
+		Optional<String> emptyDockerfilePath = Optional.empty();
+		String hash_all = Utils.generateHash(uri, branch, contextDir, emptyDockerfilePath);
 		
 		mvc.perform(
 				post(String.format("%s%s","/api/build/",hash_all)).with(user("test"))
@@ -222,7 +223,7 @@ class OsimageApplicationTests {
 		
 		
 		String uri_another = "https://github.com/anothermockrepo";
-		String hash_build_does_not_exist = Utils.generateHash(uri_another, branch, contextDir);
+		String hash_build_does_not_exist = Utils.generateHash(uri_another, branch, contextDir, emptyDockerfilePath);
 		
 		mvc.perform(
 				post(String.format("%s%s","/api/build/",hash_build_does_not_exist)).with(user("test"))
@@ -282,7 +283,8 @@ class OsimageApplicationTests {
 		
 		String hash_all = Utils.generateHash("https://github.com/mockrepo", 
 				Optional.of("master"), 
-				Optional.of("/home"));
+				Optional.of("/home"),
+				Optional.empty());
 		
 		mvc.perform(
 				get(String.format("%s%s", "/api/build/", hash_all)).with(user("test"))
@@ -304,7 +306,8 @@ class OsimageApplicationTests {
 		String uri = "https://github.com/mockrepo";
 		Optional<String> branch = Optional.of("master");
 		Optional<String> contextDir = Optional.of("/home");
-		String hash_all = Utils.generateHash(uri, branch, contextDir);
+		Optional<String> emptyDockerfilePath = Optional.empty();
+		String hash_all = Utils.generateHash(uri, branch, contextDir, emptyDockerfilePath);
 		
 		mvc.perform(
 				delete("/api/buildconfig/" + hash_all).with(user("test"))
@@ -320,7 +323,8 @@ class OsimageApplicationTests {
 		String uri = "https://github.com/mockrepo";
 		Optional<String> branch = Optional.of("master");
 		Optional<String> contextDir = Optional.of("/home");
-		String hash_all = Utils.generateHash(uri, branch, contextDir);
+		Optional<String> emptyDockerfilePath = Optional.empty();
+		String hash_all = Utils.generateHash(uri, branch, contextDir, emptyDockerfilePath);
 		
 		
 		mvc.perform(
@@ -343,10 +347,10 @@ class OsimageApplicationTests {
 		String uri = "https://github.com/mockrepo";
 		Optional<String> branch = Optional.of("master");
 		Optional<String> contextDir = Optional.of("/home");
-		Optional<String> dockerfilePath = Optional.empty();
-		String hash_all = Utils.generateHash(uri, branch, contextDir);
+		Optional<String> emptyDockerfilePath = Optional.empty();
+		String hash_all = Utils.generateHash(uri, branch, contextDir, emptyDockerfilePath);
 		
-		JsonObject root = OSJsonParser.getPOSTBody("BuildConfig", hash_all, uri, branch, contextDir, dockerfilePath);
+		JsonObject root = OSJsonParser.getPOSTBody("BuildConfig", hash_all, uri, branch, contextDir, emptyDockerfilePath);
 		
 		String actual_name = root.get("metadata").getAsJsonObject().get("name").getAsString();
 		
@@ -372,7 +376,7 @@ class OsimageApplicationTests {
 	@Test
 	void ImageStreamJsonBodyTest() {
 		
-		String hash_all = Utils.generateHash("https://github.com/mockrepo", Optional.of("master"), Optional.of("/home"));
+		String hash_all = Utils.generateHash("https://github.com/mockrepo", Optional.of("master"), Optional.of("/home"), Optional.empty());
 		
 		JsonObject root = OSJsonParser.getPOSTBody("ImageStream", hash_all);
 		
@@ -386,7 +390,7 @@ class OsimageApplicationTests {
 	@Test
 	void BuildRequestJsonBodyTest() {
 		
-		String hash_all = Utils.generateHash("https://github.com/mockrepo", Optional.of("master"), Optional.of("/home"));
+		String hash_all = Utils.generateHash("https://github.com/mockrepo", Optional.of("master"), Optional.of("/home"), Optional.empty());
 		
 		JsonObject root = OSJsonParser.getPOSTBody("BuildRequest", hash_all);
 		
