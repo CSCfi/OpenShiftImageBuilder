@@ -50,12 +50,13 @@ public class OSController {
 	ResponseEntity<String> getBuildConfig(
 			@RequestParam Optional<String> url,
 			@RequestParam Optional<String> branch,
-			@RequestParam Optional<String> contextDir) {
+			@RequestParam Optional<String> contextDir,
+			@RequestParam Optional<String> dockerfilePath) {
 		
 		
 		if(url.isPresent()){
 			String uri  = url.get();
-			String hash = Utils.generateHash(uri, branch, contextDir);
+			String hash = Utils.generateHash(uri, branch, contextDir, dockerfilePath);
 			logger.info("Getting BuildConfig for " + hash);
 			return client.getBuildConfig(hash);
 		}
@@ -75,9 +76,10 @@ public class OSController {
 	ResponseEntity<Map<String,String>> getImageStream(
 			@RequestParam String url,
 			@RequestParam Optional<String> branch,
-			@RequestParam Optional<String> contextDir) {
+			@RequestParam Optional<String> contextDir,
+			@RequestParam Optional<String> dockerfilePath) {
 		
-			String hash = Utils.generateHash(url, branch, contextDir);
+			String hash = Utils.generateHash(url, branch, contextDir, dockerfilePath);
 			logger.info("Getting ImageStream for " + hash);
 			return client.getImageStream(hash);
 	}
@@ -122,7 +124,7 @@ public class OSController {
 			@RequestParam Optional<String> dockerfilePath // Special case: Generate the image using dockerfile (no s2i)
 			) throws URISyntaxException{
 		
-		String hash = Utils.generateHash(url, branch, contextDir);
+		String hash = Utils.generateHash(url, branch, contextDir, dockerfilePath);
 		
 		ResponseEntity<String> build_resp = client.postBuildConfig(hash, url, branch, contextDir, dockerfilePath); // Create BuildConfig object
 		logger.debug(build_resp.getStatusCodeValue() + " -- " + build_resp.getBody());
