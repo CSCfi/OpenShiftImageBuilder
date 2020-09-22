@@ -53,7 +53,9 @@ public final class OSJsonParser {
 			String status = statusObj.get("phase").getAsString();
 			bsi.setStatus(status);
 			
-			String imageUrl = statusObj.get("outputDockerImageReference").getAsString();
+			//String imageUrl = statusObj.get("outputDockerImageReference").getAsString();
+			String imageUrl = String.format("%s/%s/%s", Utils.OS_IMAGE_REGISTRY_URL, Utils.NAMESPACE, buildName); //build name and image name have same value (hash value)
+			
 			bsi.setImageUrl(imageUrl);
 			
 		}
