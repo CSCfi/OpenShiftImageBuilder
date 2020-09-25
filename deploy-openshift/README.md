@@ -25,7 +25,7 @@ OpenShiftImageBuilder uses JWT(Json Web Tokens) based authentication to validate
 Use the following command to convert it into a Secret object:
 
 ```
-oc create secret generic test-privkey --from-file=<private_key_filename>
+oc create secret generic <application_name>-privkey --from-file=<private_key_filename>
 
 ```
 
@@ -38,7 +38,7 @@ The final step is to process the template provided in this directory, provide th
 4. **OPENSHIFT_IMAGE_REGISTRY_URL: URL of the OpenShift Image Registry to store the images (NO HTTP/HTTPS!)**, *eg. docker-registry.rahti.csc.fi*
 
 ```
-oc process -f template.yml -p APPLICATION_NAME=<application_name> -p PEM_FILENAME=<private_key_filename> -p OPENSHIFT_CLUSTER_URL=https://rahti.csc.fi:8443 -p OPENSHIFT_IMAGE_REGISTRY_URL=docker-registry.rahti.csc.fi | oc apply -f -
+oc process -f template.yml -p APPLICATION_NAME=<application_name> -p PEM_FILENAME=<private_key_filename>| oc apply -f -
 
 ```
 
